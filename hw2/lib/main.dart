@@ -16,6 +16,7 @@ class TeamMember {
   final String hobbies;
   final String motto;
   final Color color;
+  final String? imagePath;
 
   const TeamMember({
     required this.name,
@@ -25,6 +26,7 @@ class TeamMember {
     required this.hobbies,
     required this.motto,
     required this.color,
+    this.imagePath,
   });
 
   String get initials => name
@@ -37,15 +39,6 @@ class TeamMember {
 
 const List<TeamMember> kTeam = [
   TeamMember(
-    name: 'Tomáš Bartoš',
-    role: 'Team Member',
-    homeCountry: 'Country',
-    university: 'University',
-    hobbies: 'Hobbies',
-    motto: 'Motto',
-    color: Color(0xFF4FC3F7),
-  ),
-  TeamMember(
     name: 'Christian Model',
     role: 'Team Member',
     homeCountry: 'Germany',
@@ -53,12 +46,22 @@ const List<TeamMember> kTeam = [
     hobbies: 'Running, Photography, Soccer, Padel, Coding',
     motto: 'make it happen',
     color: Color(0xFFFF8A65),
+    imagePath: 'assets/images/christian.jpg',
+  ),
+  TeamMember(
+    name: 'Tomáš Bartoš',
+    role: 'Team Member',
+    homeCountry: 'Country',
+    university: 'TAMK',
+    hobbies: 'Hobbies',
+    motto: 'Motto',
+    color: Color(0xFF4FC3F7),
   ),
   TeamMember(
     name: 'Pradip Pokhrel',
     role: 'Team Member',
-    homeCountry: 'Country',
-    university: 'University',
+    homeCountry: 'Nepal',
+    university: 'TAMK',
     hobbies: 'Hobbies',
     motto: 'Motto',
     color: Color(0xFF81C784),
@@ -66,9 +69,9 @@ const List<TeamMember> kTeam = [
   TeamMember(
     name: 'Manuel Stöth',
     role: 'Team Member',
-    homeCountry: 'Country',
-    university: 'University',
-    hobbies: 'Hobbies',
+    homeCountry: 'Germany',
+    university: 'THWS',
+    hobbies: 'Coding, Saxophone, Gaming',
     motto: 'Motto',
     color: Color(0xFFCE93D8),
   ),
@@ -76,7 +79,7 @@ const List<TeamMember> kTeam = [
     name: 'Tai Mai',
     role: 'Team Member',
     homeCountry: 'Country',
-    university: 'University',
+    university: 'TAMK',
     hobbies: 'Hobbies',
     motto: 'Motto',
     color: Color(0xFFFFD54F),
@@ -148,14 +151,19 @@ class _TeamScreenState extends State<TeamScreen> {
             CircleAvatar(
               radius: 52,
               backgroundColor: member.color,
-              child: Text(
-                member.initials,
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
+              backgroundImage: member.imagePath != null
+                  ? AssetImage(member.imagePath!)
+                  : null,
+              child: member.imagePath == null
+                  ? Text(
+                      member.initials,
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(height: 16),
 
