@@ -4,6 +4,7 @@ import 'menu_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+  static const Color _textMuted = Color(0xFF6B6B6B);
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +26,26 @@ class HomeScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Welcome',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                  const Text(
+                    'Welcome to La Travola',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   const Text(
                     'Authentic Italian cuisine in the heart of the city. '
                     'We use only fresh, locally sourced ingredients.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
                   const SizedBox(height: 20),
-
                   Row(
                     children: [
                       InfoCard(
@@ -75,6 +83,28 @@ class HomeScreen extends StatelessWidget {
                       },
                       icon: const Icon(Icons.menu_book),
                       label: const Text('View Menu'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.facebook, size: 22, color: _textMuted),
+                      SizedBox(width: 18),
+                      Icon(Icons.camera_alt_outlined,
+                          size: 22, color: _textMuted),
+                      SizedBox(width: 18),
+                      Icon(Icons.play_circle_fill,
+                          size: 22, color: _textMuted),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '© 2022 La Travola.corp. All rights reserved.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _textMuted,
                     ),
                   ),
                 ],
