@@ -30,20 +30,14 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'Welcome to La Travola',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 12),
                   const Text(
                     'Authentic Italian cuisine in the heart of the city. '
                     'We use only fresh, locally sourced ingredients.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
+                    style: TextStyle(fontSize: 14, height: 1.4),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -76,9 +70,7 @@ class HomeScreen extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const MenuScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const MenuScreen()),
                         );
                       },
                       icon: const Icon(Icons.menu_book),
@@ -92,20 +84,19 @@ class HomeScreen extends StatelessWidget {
                     children: const [
                       Icon(Icons.facebook, size: 22, color: _textMuted),
                       SizedBox(width: 18),
-                      Icon(Icons.camera_alt_outlined,
-                          size: 22, color: _textMuted),
+                      Icon(
+                        Icons.camera_alt_outlined,
+                        size: 22,
+                        color: _textMuted,
+                      ),
                       SizedBox(width: 18),
-                      Icon(Icons.play_circle_fill,
-                          size: 22, color: _textMuted),
+                      Icon(Icons.play_circle_fill, size: 22, color: _textMuted),
                     ],
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    '© 2022 La Travola.corp. All rights reserved.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _textMuted,
-                    ),
+                    '© 2026 La Travola.corp. All rights reserved.',
+                    style: TextStyle(fontSize: 12, color: _textMuted),
                   ),
                 ],
               ),

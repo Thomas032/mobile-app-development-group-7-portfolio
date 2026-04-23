@@ -23,9 +23,9 @@ class MenuScreen extends StatelessWidget {
                 child: Text(
                   category,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: const Color(0xFF8B4513),
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: const Color(0xFF8B4513),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const Divider(height: 1),
@@ -45,10 +45,7 @@ class MenuScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: Colors.grey,
-                      ),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
                     ],
                   ),
                   onTap: () {
