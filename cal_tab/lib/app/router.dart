@@ -1,4 +1,4 @@
-import 'package:cal_tab/screens/home_screen.dart';
+import 'package:cal_tab/screens/app_root_screen.dart';
 import 'package:go_router/go_router.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -6,7 +6,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       name: 'home',
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) => const AppRootScreen(),
     ),
   ],
 );
