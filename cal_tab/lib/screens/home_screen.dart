@@ -1,7 +1,5 @@
-import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
-import 'package:cal_tab/providers/profile_setup_provider.dart';
 import 'package:cal_tab/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,184 +12,163 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final logState = ref.watch(dailyLogControllerProvider);
+    final todayEntries = logState.entriesForDate(DateTime.now());
     final summary = logState.summaryFor(date: DateTime.now(), profile: profile);
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 104),
-          children: [
-            Row(
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 104),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Today',
+                style: textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${summary.caloriesConsumed} kcal logged',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          AppCard(
+            child: Column(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                SizedBox.square(
+                  dimension: 172,
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Text(
-                        'Today',
-                        style: textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      CircularProgressIndicator(
+                        value: summary.calorieProgress
+                            .clamp(0.0, 1.0)
+                            .toDouble(),
+                        strokeWidth: 16,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: colors.primary.withValues(alpha: 0.10),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${summary.caloriesConsumed} kcal logged',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${summary.caloriesLeft}',
+                              key: const Key('calories_left_value'),
+                              style: textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              'kcal left',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                IconButton.filledTonal(
-                  tooltip: 'Reset profile',
-                  onPressed: () => ref
-                      .read(profileSetupControllerProvider.notifier)
-                      .clearSavedProfile(),
-                  icon: const Icon(Icons.person_outline),
+                const SizedBox(height: 20),
+                Text(
+                  'Daily target ${profile.calorieGoal} kcal',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            AppCard(
-              child: Column(
-                children: [
-                  SizedBox.square(
-                    dimension: 172,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CircularProgressIndicator(
-                          value: summary.calorieProgress
-                              .clamp(0.0, 1.0)
-                              .toDouble(),
-                          strokeWidth: 16,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor: colors.primary.withValues(
-                            alpha: 0.10,
-                          ),
-                        ),
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${summary.caloriesLeft}',
-                                key: const Key('calories_left_value'),
-                                style: textTheme.headlineLarge?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              Text(
-                                'kcal left',
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+          ),
+          const SizedBox(height: 20),
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.45,
+            children: [
+              _MacroTile(
+                label: 'Protein',
+                consumed: summary.proteinConsumedGrams,
+                target: profile.macroTargets.proteinGrams,
+              ),
+              _MacroTile(
+                label: 'Carbs',
+                consumed: summary.carbsConsumedGrams,
+                target: profile.macroTargets.carbsGrams,
+              ),
+              _MacroTile(
+                label: 'Fat',
+                consumed: summary.fatConsumedGrams,
+                target: profile.macroTargets.fatGrams,
+              ),
+              _MacroTile(
+                label: 'Fiber',
+                consumed: summary.fiberConsumedGrams,
+                target: profile.macroTargets.fiberGrams,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Meals',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 12),
+                if (todayEntries.isEmpty)
                   Text(
-                    'Daily target ${profile.calorieGoal} kcal',
+                    'No food logged yet.',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.45,
-              children: [
-                _MacroTile(
-                  label: 'Protein',
-                  consumed: summary.proteinConsumedGrams,
-                  target: profile.macroTargets.proteinGrams,
-                ),
-                _MacroTile(
-                  label: 'Carbs',
-                  consumed: summary.carbsConsumedGrams,
-                  target: profile.macroTargets.carbsGrams,
-                ),
-                _MacroTile(
-                  label: 'Fat',
-                  consumed: summary.fatConsumedGrams,
-                  target: profile.macroTargets.fatGrams,
-                ),
-                _MacroTile(
-                  label: 'Fiber',
-                  consumed: summary.fiberConsumedGrams,
-                  target: profile.macroTargets.fiberGrams,
-                ),
+                  )
+                else
+                  for (final entry in todayEntries)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(entry.foodItem.name),
+                                Text(
+                                  entry.mealType.label,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text('${entry.calories} kcal'),
+                        ],
+                      ),
+                    ),
               ],
             ),
-            const SizedBox(height: 20),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Meals',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (logState.entries.isEmpty)
-                    Text(
-                      'No food logged yet.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    for (final entry in logState.entries)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(entry.foodItem.name)),
-                            Text('${entry.calories} kcal'),
-                          ],
-                        ),
-                      ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('quick_log_button'),
-        onPressed: () => _logDemoFood(ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Quick log'),
+          ),
+        ],
       ),
     );
-  }
-
-  Future<void> _logDemoFood(WidgetRef ref) async {
-    ref
-        .read(dailyLogControllerProvider.notifier)
-        .logFood(
-          entryId: DateTime.now().microsecondsSinceEpoch.toString(),
-          foodItem: _demoFood,
-          date: DateTime.now(),
-          quantity: 1,
-        );
-    await ref.read(dailyLogControllerProvider.notifier).saveCurrentEntries();
   }
 }
 
@@ -243,13 +220,3 @@ class _MacroTile extends StatelessWidget {
     );
   }
 }
-
-const _demoFood = FoodItem(
-  id: 'demo-banana',
-  name: 'Banana',
-  calories: 105,
-  proteinGrams: 1.3,
-  carbsGrams: 27,
-  fatGrams: 0.4,
-  fiberGrams: 3.1,
-);

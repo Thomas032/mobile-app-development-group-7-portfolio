@@ -1,11 +1,6 @@
-import 'package:cal_tab/models/activity_level.dart';
-import 'package:cal_tab/models/gender.dart';
-import 'package:cal_tab/models/goal_type.dart';
-import 'package:cal_tab/models/macro_targets.dart';
-import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
+import 'package:cal_tab/screens/add_food_screen.dart';
 import 'package:cal_tab/screens/app_root_screen.dart';
-import 'package:cal_tab/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,9 +38,7 @@ void main() {
     expect(profileRepository.profile!.calorieGoal, 2556);
   });
 
-  testWidgets('quick log updates the home summary and persists entries', (
-    tester,
-  ) async {
+  testWidgets('manual food entry persists a meal entry', (tester) async {
     _useTallViewport(tester);
     final mealRepository = FakeMealLogRepository();
 
@@ -54,42 +47,38 @@ void main() {
         overrides: [
           mealLogRepositoryProvider.overrideWith((ref) async => mealRepository),
         ],
-        child: const MaterialApp(home: HomeScreen(profile: _profile)),
+        child: const MaterialApp(home: AddFoodScreen()),
       ),
     );
 
-    expect(find.text('2200'), findsOneWidget);
-    expect(find.text('No food logged yet.'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('manual_food_name_field')),
+      'Banana',
+    );
+    await tester.enterText(
+      find.byKey(const Key('manual_calories_field')),
+      '105',
+    );
+    await tester.enterText(
+      find.byKey(const Key('manual_protein_field')),
+      '1.3',
+    );
+    await tester.enterText(find.byKey(const Key('manual_carbs_field')), '27');
+    await tester.enterText(find.byKey(const Key('manual_fat_field')), '0.4');
+    await tester.enterText(find.byKey(const Key('manual_fiber_field')), '3.1');
 
-    await tester.tap(find.byKey(const Key('quick_log_button')));
+    await tester.tap(find.byKey(const Key('save_manual_food_button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('2095'), findsOneWidget);
-    expect(find.text('Banana'), findsOneWidget);
     expect(mealRepository.entries, hasLength(1));
+    expect(mealRepository.entries.single.foodItem.name, 'Banana');
+    expect(mealRepository.entries.single.calories, 105);
   });
 }
 
 void _useTallViewport(WidgetTester tester) {
-  tester.view.physicalSize = const Size(800, 1000);
+  tester.view.physicalSize = const Size(800, 1400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 }
-
-const _profile = UserProfile(
-  id: 'local-user',
-  age: 30,
-  heightCm: 175,
-  weightKg: 70,
-  gender: Gender.male,
-  activityLevel: ActivityLevel.moderatelyActive,
-  goalType: GoalType.maintain,
-  calorieGoal: 2200,
-  macroTargets: MacroTargets(
-    proteinGrams: 126,
-    carbsGrams: 260,
-    fatGrams: 63,
-    fiberGrams: 30,
-  ),
-);
