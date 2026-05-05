@@ -39,8 +39,7 @@ class NutritionCalculator {
     _validatePositive(heightCm, 'heightCm');
     _validatePositive(age, 'age');
 
-    return (10 * weightKg) + (6.25 * heightCm) - (5 * age) +
-        gender.bmrConstant;
+    return (10 * weightKg) + (6.25 * heightCm) - (5 * age) + gender.bmrConstant;
   }
 
   double calculateTdee({
