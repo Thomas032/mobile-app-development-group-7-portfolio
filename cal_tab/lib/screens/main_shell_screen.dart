@@ -112,15 +112,13 @@ class _MainBottomBar extends StatelessWidget {
               ),
             ],
           ),
-          Transform.translate(
-            child: SizedBox.square(
-              dimension: 64,
-              child: FloatingActionButton(
-                key: const Key('open_add_food_button'),
-                tooltip: 'Add food',
-                onPressed: onAddFood,
-                child: const Icon(Icons.add, size: 32),
-              ),
+          SizedBox.square(
+            dimension: 64,
+            child: FloatingActionButton(
+              key: const Key('open_add_food_button'),
+              tooltip: 'Add food',
+              onPressed: onAddFood,
+              child: const Icon(Icons.add, size: 32),
             ),
           ),
         ],
@@ -171,11 +169,9 @@ class _BottomTabButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color:
-                          isSelected ? colors.primary : colors.onSurfaceVariant,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w500,
-                    ),
+                  color: isSelected ? colors.primary : colors.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
               ),
             ],
           ),

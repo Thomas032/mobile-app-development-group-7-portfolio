@@ -96,27 +96,31 @@ class HomeScreen extends ConsumerWidget {
             mainAxisSpacing: 12,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.45,
+            childAspectRatio: 1.05,
             children: [
               _MacroTile(
                 label: 'Protein',
                 consumed: summary.proteinConsumedGrams,
                 target: profile.macroTargets.proteinGrams,
+                color: const Color(0xFFFF9500),
               ),
               _MacroTile(
                 label: 'Carbs',
                 consumed: summary.carbsConsumedGrams,
                 target: profile.macroTargets.carbsGrams,
+                color: const Color(0xFF34C759),
               ),
               _MacroTile(
                 label: 'Fat',
                 consumed: summary.fatConsumedGrams,
                 target: profile.macroTargets.fatGrams,
+                color: const Color(0xFFFF8E80),
               ),
               _MacroTile(
                 label: 'Fiber',
                 consumed: summary.fiberConsumedGrams,
                 target: profile.macroTargets.fiberGrams,
+                color: const Color(0xFF6D7B6B),
               ),
             ],
           ),
@@ -177,11 +181,13 @@ class _MacroTile extends StatelessWidget {
     required this.label,
     required this.consumed,
     required this.target,
+    required this.color,
   });
 
   final String label;
   final double consumed;
   final double target;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -189,31 +195,51 @@ class _MacroTile extends StatelessWidget {
     final progress = target <= 0
         ? 0.0
         : (consumed / target).clamp(0.0, 1.0).toDouble();
+    final percentage = (progress * 100).round();
 
     return AppCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          SizedBox.square(
+            dimension: 64,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 7,
+                  strokeCap: StrokeCap.round,
+                  color: color,
+                  backgroundColor: color.withValues(alpha: 0.14),
+                ),
+                Center(
+                  child: Text(
+                    '$percentage%',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           Text(
             label,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: colors.onSurface,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${consumed.round()}/${target.round()}g',
             style: Theme.of(
               context,
-            ).textTheme.labelLarge?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LinearProgressIndicator(value: progress),
-              const SizedBox(height: 8),
-              Text(
-                '${consumed.round()} / ${target.round()} g',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
           ),
         ],
       ),
