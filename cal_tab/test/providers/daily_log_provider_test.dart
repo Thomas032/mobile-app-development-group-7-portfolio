@@ -3,11 +3,15 @@ import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/gender.dart';
 import 'package:cal_tab/models/goal_type.dart';
 import 'package:cal_tab/models/macro_targets.dart';
+import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../fakes/fake_meal_log_repository.dart';
 
 void main() {
   group('DailyLogController', () {
@@ -109,8 +113,57 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('loads saved entries from the repository', () async {
+      final repository = FakeMealLogRepository(initialEntries: [_entry]);
+      final container = ProviderContainer(
+        overrides: [
+          mealLogRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(dailyLogControllerProvider.notifier)
+          .loadSavedEntries();
+
+      final entries = container.read(dailyLogControllerProvider).entries;
+
+      expect(entries, hasLength(1));
+      expect(entries.single.id, _entry.id);
+    });
+
+    test('saves current entries to the repository', () async {
+      final repository = FakeMealLogRepository();
+      final container = ProviderContainer(
+        overrides: [
+          mealLogRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(dailyLogControllerProvider.notifier);
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+      );
+      await controller.saveCurrentEntries();
+
+      expect(repository.entries, hasLength(1));
+      expect(repository.entries.single.id, 'entry-1');
+    });
   });
 }
+
+final _entry = MealEntry(
+  id: 'saved-entry',
+  date: DateTime(2026, 5, 5, 8),
+  mealType: MealType.breakfast,
+  foodItem: _banana,
+  quantity: 1,
+);
 
 const _banana = FoodItem(
   id: 'banana',

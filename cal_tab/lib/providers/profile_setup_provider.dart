@@ -1,6 +1,7 @@
 import 'package:cal_tab/models/profile_setup_input.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ProfileSetupState {
@@ -48,6 +49,28 @@ class ProfileSetupController extends Notifier<ProfileSetupState> {
         macroTargets: targets.macroTargets,
       ),
     );
+  }
+
+  Future<void> loadSavedProfile() async {
+    final repository = await ref.read(userProfileRepositoryProvider.future);
+    final profile = await repository.loadProfile();
+    state = ProfileSetupState(profile: profile);
+  }
+
+  Future<void> saveCurrentProfile() async {
+    final profile = state.profile;
+    if (profile == null) {
+      return;
+    }
+
+    final repository = await ref.read(userProfileRepositoryProvider.future);
+    await repository.saveProfile(profile);
+  }
+
+  Future<void> clearSavedProfile() async {
+    final repository = await ref.read(userProfileRepositoryProvider.future);
+    await repository.clearProfile();
+    clear();
   }
 
   void clear() {

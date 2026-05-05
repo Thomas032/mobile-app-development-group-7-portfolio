@@ -4,6 +4,7 @@ import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DailyLogState {
@@ -66,6 +67,22 @@ class DailyLogController extends Notifier<DailyLogState> {
     );
 
     state = state.copyWith(entries: [...state.entries, entry]);
+  }
+
+  Future<void> loadSavedEntries() async {
+    final repository = await ref.read(mealLogRepositoryProvider.future);
+    state = state.copyWith(entries: await repository.loadEntries());
+  }
+
+  Future<void> saveCurrentEntries() async {
+    final repository = await ref.read(mealLogRepositoryProvider.future);
+    await repository.saveEntries(state.entries);
+  }
+
+  Future<void> clearSavedEntries() async {
+    final repository = await ref.read(mealLogRepositoryProvider.future);
+    await repository.clearEntries();
+    clear();
   }
 
   void removeEntry(String entryId) {
