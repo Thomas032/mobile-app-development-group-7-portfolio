@@ -1,3 +1,5 @@
+import 'package:cal_tab/models/meal_entry.dart';
+import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/widgets/app_card.dart';
@@ -144,29 +146,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   )
                 else
-                  for (final entry in todayEntries)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(entry.foodItem.name),
-                                Text(
-                                  entry.mealType.label,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text('${entry.calories} kcal'),
-                        ],
-                      ),
-                    ),
+                  _MealAccordions(entries: todayEntries),
               ],
             ),
           ),
@@ -241,6 +221,86 @@ class _MacroTile extends StatelessWidget {
               context,
             ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MealAccordions extends StatelessWidget {
+  const _MealAccordions({required this.entries});
+
+  final List<MealEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <MealType, List<MealEntry>>{
+      for (final type in MealType.values)
+        if (entries.any((e) => e.mealType == type))
+          type: entries.where((e) => e.mealType == type).toList(),
+    };
+
+    return Column(
+      children: [
+        for (final group in grouped.entries)
+          _MealSection(mealType: group.key, entries: group.value),
+      ],
+    );
+  }
+}
+
+class _MealSection extends StatelessWidget {
+  const _MealSection({required this.mealType, required this.entries});
+
+  final MealType mealType;
+  final List<MealEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final totalKcal = entries.fold(0, (sum, e) => sum + e.calories);
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 4),
+        title: Text(
+          mealType.label,
+          style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        trailing: Text(
+          '$totalKcal kcal',
+          style: textTheme.bodySmall?.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        ),
+        children: [
+          for (final entry in entries)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.foodItem.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${entry.calories} kcal',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

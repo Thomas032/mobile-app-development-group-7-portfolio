@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fakes/fake_food_search_repository.dart';
 import '../fakes/fake_meal_log_repository.dart';
 import '../fakes/fake_user_profile_repository.dart';
 
@@ -46,10 +47,17 @@ void main() {
       ProviderScope(
         overrides: [
           mealLogRepositoryProvider.overrideWith((ref) async => mealRepository),
+          foodSearchRepositoryProvider.overrideWith(
+            (ref) async => FakeFoodSearchRepository(),
+          ),
         ],
         child: const MaterialApp(home: AddFoodScreen()),
       ),
     );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('manual_food_action_button')));
+    await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byKey(const Key('manual_food_name_field')),
