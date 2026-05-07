@@ -29,14 +29,37 @@ class LogCalendar extends StatefulWidget {
 
 class _LogCalendarState extends State<LogCalendar> {
   late final ScrollController _scrollController;
+  late DateTime _anchorDate;
 
   @override
   void initState() {
     super.initState();
+    final selectedDate = normalizeLogDate(widget.selectedDate);
+    final today = normalizeLogDate(widget.today);
+    _anchorDate = _isDateInRangeForAnchor(selectedDate, today)
+        ? today
+        : selectedDate;
     _scrollController = ScrollController(
-      initialScrollOffset:
-          (LogCalendar._rangeBeforeToday - 2) * LogCalendar._dayExtent,
+      initialScrollOffset: _offsetForDate(selectedDate),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant LogCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final selectedDate = normalizeLogDate(widget.selectedDate);
+    if (!_isDateInRenderedRange(selectedDate)) {
+      _anchorDate = selectedDate;
+    }
+
+    if (!_isSameDay(oldWidget.selectedDate, widget.selectedDate)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollToSelectedDate();
+        }
+      });
+    }
   }
 
   @override
@@ -51,7 +74,7 @@ class _LogCalendarState extends State<LogCalendar> {
     final selectedNorm = normalizeLogDate(widget.selectedDate);
     final days = List.generate(
       LogCalendar._rangeBeforeToday + LogCalendar._rangeAfterToday + 1,
-      (i) => todayNorm.add(Duration(days: i - LogCalendar._rangeBeforeToday)),
+      (i) => _anchorDate.add(Duration(days: i - LogCalendar._rangeBeforeToday)),
     );
 
     return SizedBox(
@@ -83,6 +106,42 @@ class _LogCalendarState extends State<LogCalendar> {
           );
         },
       ),
+    );
+  }
+
+  bool _isDateInRenderedRange(DateTime date) {
+    return _isDateInRangeForAnchor(date, _anchorDate);
+  }
+
+  bool _isDateInRangeForAnchor(DateTime date, DateTime anchor) {
+    final dayOffset = _dayDelta(anchor, date);
+    return dayOffset >= -LogCalendar._rangeBeforeToday &&
+        dayOffset <= LogCalendar._rangeAfterToday;
+  }
+
+  double _offsetForDate(DateTime date) {
+    const leadingVisibleDays = 2;
+    final firstRenderedDate = _anchorDate.subtract(
+      const Duration(days: LogCalendar._rangeBeforeToday),
+    );
+    final index = _dayDelta(firstRenderedDate, date);
+    final rawOffset = (index - leadingVisibleDays) * LogCalendar._dayExtent;
+    return rawOffset < 0 ? 0 : rawOffset;
+  }
+
+  void _scrollToSelectedDate() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    final maxOffset = _scrollController.position.maxScrollExtent;
+    final targetOffset = _offsetForDate(
+      widget.selectedDate,
+    ).clamp(0.0, maxOffset).toDouble();
+    _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
     );
   }
 }
@@ -155,40 +214,43 @@ class _CalendarDayChip extends StatelessWidget {
     final bgColor = status.color(context);
     final fgColor = status.foregroundColor(context);
 
-    return InkWell(
-      key: Key('calendar_day_${logDateKey(date)}'),
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Container(
-        key: Key('calendar_day_status_${logDateKey(date)}'),
-        width: 50,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? colors.primary : Colors.transparent,
-            width: 2,
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        key: Key('calendar_day_${logDateKey(date)}'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Ink(
+          key: Key('calendar_day_status_${logDateKey(date)}'),
+          width: 50,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? colors.primary : Colors.transparent,
+              width: 2,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _weekdays[date.weekday - 1],
-              style: textTheme.labelSmall?.copyWith(
-                color: fgColor,
-                fontWeight: FontWeight.w600,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _weekdays[date.weekday - 1],
+                style: textTheme.labelSmall?.copyWith(
+                  color: fgColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${date.day}',
-              style: textTheme.titleMedium?.copyWith(
-                color: fgColor,
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 4),
+              Text(
+                '${date.day}',
+                style: textTheme.titleMedium?.copyWith(
+                  color: fgColor,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -197,4 +259,10 @@ class _CalendarDayChip extends StatelessWidget {
 
 bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+int _dayDelta(DateTime start, DateTime end) {
+  final startUtc = DateTime.utc(start.year, start.month, start.day);
+  final endUtc = DateTime.utc(end.year, end.month, end.day);
+  return endUtc.difference(startUtc).inDays;
 }

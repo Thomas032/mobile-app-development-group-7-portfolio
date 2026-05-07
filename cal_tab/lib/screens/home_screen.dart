@@ -28,7 +28,23 @@ class HomeScreen extends ConsumerWidget {
     return SafeArea(
       child: Column(
         children: [
-          _TopBar(streak: streak, date: selectedDate),
+          _TopBar(
+            streak: streak,
+            date: selectedDate,
+            onDatePressed: () async {
+              final pickedDate = await showDatePicker(
+                context: context,
+                initialDate: selectedDate,
+                firstDate: DateTime(today.year - 5),
+                lastDate: DateTime(today.year + 5),
+                currentDate: today,
+              );
+
+              if (pickedDate != null && context.mounted) {
+                ref.read(selectedLogDateProvider.notifier).select(pickedDate);
+              }
+            },
+          ),
           Expanded(
             child: ListView(
               key: const Key('home_main_scroll'),
@@ -80,10 +96,15 @@ class HomeScreen extends ConsumerWidget {
 // ──────────────────────────────────────────
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.streak, required this.date});
+  const _TopBar({
+    required this.streak,
+    required this.date,
+    required this.onDatePressed,
+  });
 
   final int streak;
   final DateTime date;
+  final VoidCallback onDatePressed;
 
   static const _months = [
     'Jan',
@@ -132,6 +153,8 @@ class _TopBar extends StatelessWidget {
             icon: Icons.calendar_today_rounded,
             iconColor: colors.primary,
             label: dateLabel,
+            tooltip: 'Choose date',
+            onTap: onDatePressed,
           ),
         ],
       ),
@@ -145,35 +168,54 @@ class _PillBadge extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.label,
+    this.tooltip,
+    this.onTap,
   });
 
   final IconData icon;
   final Color iconColor;
   final String label;
+  final String? tooltip;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
+    final badge = Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: iconColor),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: iconColor),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
+
+    if (tooltip == null) {
+      return badge;
+    }
+
+    return Tooltip(message: tooltip!, child: badge);
   }
 }
 

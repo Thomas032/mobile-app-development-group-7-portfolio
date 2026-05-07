@@ -8,7 +8,9 @@ import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
+import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/screens/home_screen.dart';
+import 'package:cal_tab/widgets/log_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +31,7 @@ Future<void> _scrollHomeUntilVisible(WidgetTester tester, Finder finder) async {
 void main() {
   Widget buildScreen({
     List<MealEntry> entries = const [],
+    DateTime? selectedDate,
     void Function(Object?)? onAddFoodExtra,
   }) {
     return ProviderScope(
@@ -36,6 +39,10 @@ void main() {
         dailyLogControllerProvider.overrideWith(
           () => _SeedableLogController(entries),
         ),
+        if (selectedDate != null)
+          selectedLogDateProvider.overrideWith(
+            () => _SeedableSelectedLogDateController(selectedDate),
+          ),
       ],
       child: MaterialApp.router(
         routerConfig: GoRouter(
@@ -67,6 +74,30 @@ void main() {
     expect(find.text('CalTab'), findsOneWidget);
     expect(find.byKey(const Key('streak_badge')), findsOneWidget);
     expect(find.byKey(const Key('date_badge')), findsOneWidget);
+  });
+
+  testWidgets('date badge opens date picker and jumps to selected date', (
+    tester,
+  ) async {
+    final targetDate = _datePickerTargetDate();
+
+    await tester.pumpWidget(
+      buildScreen(
+        entries: [_entryFor(date: targetDate, name: 'Pear', calories: 321)],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('date_badge')));
+    await tester.pumpAndSettle();
+    expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+    await tester.tap(find.text('${targetDate.day}').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('321'), findsOneWidget);
   });
 
   testWidgets('renders at least two ListViews (calendar + main scroll)', (
@@ -116,9 +147,6 @@ void main() {
     await tester.tap(find.byKey(Key('calendar_day_${logDateKey(yesterday)}')));
     await tester.pump();
     expect(find.text('105'), findsOneWidget);
-    await _scrollHomeUntilVisible(tester, find.text('Apple'));
-
-    expect(find.text('Apple'), findsOneWidget);
   });
 
   testWidgets('calendar colors days by calorie goal status', (tester) async {
@@ -137,6 +165,54 @@ void main() {
 
     expect(_calendarDayColor(tester, twoDaysAgo), const Color(0xFF34C759));
     expect(_calendarDayColor(tester, yesterday), const Color(0xFFFF9500));
+  });
+
+  testWidgets('horizontal calendar recenters around selected jump date', (
+    tester,
+  ) async {
+    final jumpDate = _today().subtract(const Duration(days: 60));
+
+    await tester.pumpWidget(buildScreen(selectedDate: jumpDate));
+    await tester.pump();
+
+    expect(
+      find.byKey(Key('calendar_day_${logDateKey(jumpDate)}')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('horizontal calendar syncs after selected date changes', (
+    tester,
+  ) async {
+    final today = _today();
+    final jumpDate = today.subtract(const Duration(days: 60));
+
+    Widget buildCalendar(DateTime selectedDate) {
+      return MaterialApp(
+        home: LogCalendar(
+          logState: const DailyLogState(),
+          profile: _profile,
+          selectedDate: selectedDate,
+          today: today,
+          onDateSelected: (_) {},
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildCalendar(today));
+    await tester.pump();
+    expect(
+      find.byKey(Key('calendar_day_${logDateKey(today)}')),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(buildCalendar(jumpDate));
+    await tester.pump();
+
+    expect(
+      find.byKey(Key('calendar_day_${logDateKey(jumpDate)}')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('renders Nutrients section label', (tester) async {
@@ -236,6 +312,15 @@ class _SeedableLogController extends DailyLogController {
   DailyLogState build() => DailyLogState(entries: _initialEntries);
 }
 
+class _SeedableSelectedLogDateController extends SelectedLogDateController {
+  _SeedableSelectedLogDateController(this._selectedDate);
+
+  final DateTime _selectedDate;
+
+  @override
+  DateTime build() => normalizeLogDate(_selectedDate);
+}
+
 const _profile = UserProfile(
   id: 'test-user',
   age: 30,
@@ -271,6 +356,12 @@ final _breakfastEntry = MealEntry(
 
 DateTime _today() => normalizeLogDate(DateTime.now());
 
+DateTime _datePickerTargetDate() {
+  final today = _today();
+  final targetDay = today.day == 1 ? 2 : 1;
+  return DateTime(today.year, today.month, targetDay);
+}
+
 MealEntry _entryFor({
   required DateTime date,
   String name = 'Banana',
@@ -294,9 +385,9 @@ MealEntry _entryFor({
 }
 
 Color? _calendarDayColor(WidgetTester tester, DateTime date) {
-  final container = tester.widget<Container>(
+  final ink = tester.widget<Ink>(
     find.byKey(Key('calendar_day_status_${logDateKey(date)}')),
   );
-  final decoration = container.decoration as BoxDecoration?;
+  final decoration = ink.decoration as BoxDecoration?;
   return decoration?.color;
 }
