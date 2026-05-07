@@ -164,23 +164,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                   const SizedBox(height: 12),
                   _buildNutritionPreview(food),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<MealType>(
-                    key: const Key('detail_meal_type_field'),
-                    value: _mealType,
-                    decoration: const InputDecoration(labelText: 'Meal'),
-                    items: [
-                      for (final mealType in MealType.values)
-                        DropdownMenuItem(
-                          value: mealType,
-                          child: Text(mealType.label),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _mealType = value);
-                      }
-                    },
-                  ),
+                  _MealTargetRow(mealType: _mealType),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     key: const Key('add_search_food_button'),
@@ -331,4 +315,61 @@ class _NutrientRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MealTargetRow extends StatelessWidget {
+  const _MealTargetRow({required this.mealType});
+
+  final MealType mealType;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      key: const Key('detail_meal_target'),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.restaurant_menu_rounded, color: colors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Meal',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  _mealTargetLabel(mealType),
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _mealTargetLabel(MealType mealType) {
+  return switch (mealType) {
+    MealType.breakfast => 'Breakfast',
+    MealType.snackMorning => 'Morning snack',
+    MealType.lunch => 'Lunch',
+    MealType.snackAfternoon => 'Afternoon snack',
+    MealType.dinner => 'Dinner',
+    MealType.secondDinner => 'Second dinner',
+  };
 }

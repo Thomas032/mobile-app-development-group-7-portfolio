@@ -524,6 +524,20 @@ class _MealSection extends StatelessWidget {
             childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             title: Row(
               children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer.withValues(alpha: 0.26),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _mealIcon(mealType),
+                    color: colors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,6 +601,17 @@ class _MealSection extends StatelessWidget {
       ],
     );
   }
+}
+
+IconData _mealIcon(MealType mealType) {
+  return switch (mealType) {
+    MealType.breakfast => Icons.free_breakfast_outlined,
+    MealType.snackMorning => Icons.bakery_dining_outlined,
+    MealType.lunch => Icons.lunch_dining_outlined,
+    MealType.snackAfternoon => Icons.cookie_outlined,
+    MealType.dinner => Icons.dinner_dining_outlined,
+    MealType.secondDinner => Icons.nightlight_outlined,
+  };
 }
 
 class _AddFoodButton extends StatelessWidget {

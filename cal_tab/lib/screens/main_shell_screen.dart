@@ -1,4 +1,5 @@
 import 'package:cal_tab/models/food_log_route_args.dart';
+import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/screens/ai_screen.dart';
@@ -36,9 +37,146 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       bottomNavigationBar: _MainBottomBar(
         selectedIndex: _selectedIndex,
         onTabSelected: (index) => setState(() => _selectedIndex = index),
-        onAddFood: () => context.pushNamed(
-          'add-food',
-          extra: FoodLogTarget(date: selectedDate),
+        onAddFood: () => _openMealPicker(selectedDate),
+      ),
+    );
+  }
+
+  Future<void> _openMealPicker(DateTime selectedDate) async {
+    final mealType = await showModalBottomSheet<MealType>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _MealPickerSheet(),
+    );
+
+    if (!mounted || mealType == null) {
+      return;
+    }
+
+    context.pushNamed(
+      'add-food',
+      extra: FoodLogTarget(date: selectedDate, mealType: mealType),
+    );
+  }
+}
+
+class _MealPickerSheet extends StatelessWidget {
+  const _MealPickerSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 32,
+            offset: const Offset(0, -12),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.outlineVariant,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const SizedBox(width: 44, height: 5),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Log food',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Choose a meal before searching.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 18),
+              for (final mealType in MealType.values)
+                _MealPickerAction(mealType: mealType),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MealPickerAction extends StatelessWidget {
+  const _MealPickerAction({required this.mealType});
+
+  final MealType mealType;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          key: Key('meal_picker_${mealType.name}'),
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => Navigator.of(context).pop(mealType),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer.withValues(alpha: 0.32),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _mealIcon(mealType),
+                    color: colors.primary,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _mealActionLabel(mealType),
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -132,6 +270,28 @@ class _MainBottomBar extends StatelessWidget {
       ),
     );
   }
+}
+
+String _mealActionLabel(MealType mealType) {
+  return switch (mealType) {
+    MealType.breakfast => 'Breakfast',
+    MealType.snackMorning => 'Morning snack',
+    MealType.lunch => 'Lunch',
+    MealType.snackAfternoon => 'Afternoon snack',
+    MealType.dinner => 'Dinner',
+    MealType.secondDinner => 'Second dinner',
+  };
+}
+
+IconData _mealIcon(MealType mealType) {
+  return switch (mealType) {
+    MealType.breakfast => Icons.free_breakfast_outlined,
+    MealType.snackMorning => Icons.bakery_dining_outlined,
+    MealType.lunch => Icons.lunch_dining_outlined,
+    MealType.snackAfternoon => Icons.cookie_outlined,
+    MealType.dinner => Icons.dinner_dining_outlined,
+    MealType.secondDinner => Icons.nightlight_outlined,
+  };
 }
 
 class _BottomTabButton extends StatelessWidget {

@@ -34,6 +34,10 @@ void main() {
       find.byKey(const Key('detail_quantity_field')),
       '200',
     );
+    expect(find.byKey(const Key('detail_meal_type_field')), findsNothing);
+    expect(find.byKey(const Key('detail_meal_target')), findsOneWidget);
+    expect(find.text('Lunch'), findsOneWidget);
+
     await tester.ensureVisible(find.byKey(const Key('add_search_food_button')));
     await tester.pump();
     await tester.tap(find.byKey(const Key('add_search_food_button')));
