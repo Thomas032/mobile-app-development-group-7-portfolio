@@ -1,5 +1,6 @@
 import 'package:cal_tab/models/activity_level.dart';
 import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/gender.dart';
 import 'package:cal_tab/models/goal_type.dart';
 import 'package:cal_tab/models/macro_targets.dart';
@@ -26,7 +27,10 @@ Future<void> _scrollHomeUntilVisible(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
-  Widget buildScreen({List<MealEntry> entries = const []}) {
+  Widget buildScreen({
+    List<MealEntry> entries = const [],
+    void Function(Object?)? onAddFoodExtra,
+  }) {
     return ProviderScope(
       overrides: [
         dailyLogControllerProvider.overrideWith(
@@ -43,7 +47,10 @@ void main() {
             GoRoute(
               path: '/add-food',
               name: 'add-food',
-              builder: (_, __) => const SizedBox(),
+              builder: (_, state) {
+                onAddFoodExtra?.call(state.extra);
+                return const SizedBox(key: Key('add_food_route'));
+              },
             ),
           ],
         ),
@@ -62,7 +69,7 @@ void main() {
     expect(find.byKey(const Key('date_badge')), findsOneWidget);
   });
 
-  testWidgets('renders at least two ListViews (day strip + main scroll)', (
+  testWidgets('renders at least two ListViews (calendar + main scroll)', (
     tester,
   ) async {
     await tester.pumpWidget(buildScreen());
@@ -92,6 +99,44 @@ void main() {
     await tester.pump();
 
     expect(find.text('210'), findsOneWidget); // 2 × 105 kcal banana
+  });
+
+  testWidgets('switches selected calendar date and filters logged meals', (
+    tester,
+  ) async {
+    final yesterday = _today().subtract(const Duration(days: 1));
+
+    await tester.pumpWidget(
+      buildScreen(
+        entries: [_entryFor(date: yesterday, name: 'Apple')],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(Key('calendar_day_${logDateKey(yesterday)}')));
+    await tester.pump();
+    expect(find.text('105'), findsOneWidget);
+    await _scrollHomeUntilVisible(tester, find.text('Apple'));
+
+    expect(find.text('Apple'), findsOneWidget);
+  });
+
+  testWidgets('calendar colors days by calorie goal status', (tester) async {
+    final yesterday = _today().subtract(const Duration(days: 1));
+    final twoDaysAgo = _today().subtract(const Duration(days: 2));
+
+    await tester.pumpWidget(
+      buildScreen(
+        entries: [
+          _entryFor(date: yesterday, calories: 105),
+          _entryFor(date: twoDaysAgo, calories: _profile.calorieGoal),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(_calendarDayColor(tester, twoDaysAgo), const Color(0xFF34C759));
+    expect(_calendarDayColor(tester, yesterday), const Color(0xFFFF9500));
   });
 
   testWidgets('renders Nutrients section label', (tester) async {
@@ -153,6 +198,29 @@ void main() {
 
     expect(find.text('Banana'), findsOneWidget);
   });
+
+  testWidgets('meal add button carries selected date and meal type', (
+    tester,
+  ) async {
+    final yesterday = _today().subtract(const Duration(days: 1));
+    FoodLogTarget? openedTarget;
+
+    await tester.pumpWidget(
+      buildScreen(
+        onAddFoodExtra: (extra) => openedTarget = extra as FoodLogTarget?,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(Key('calendar_day_${logDateKey(yesterday)}')));
+    await tester.pump();
+    await _scrollHomeUntilVisible(tester, find.text('Breakfast'));
+    await tester.tap(find.byKey(const Key('add_food_breakfast_button')));
+    await tester.pumpAndSettle();
+
+    expect(openedTarget?.date, yesterday);
+    expect(openedTarget?.mealType, MealType.breakfast);
+  });
 }
 
 // ──────────────────────────────────────────
@@ -187,7 +255,7 @@ const _profile = UserProfile(
 
 final _breakfastEntry = MealEntry(
   id: 'e1',
-  date: DateTime.now(),
+  date: _today(),
   mealType: MealType.breakfast,
   foodItem: const FoodItem(
     id: 'banana',
@@ -200,3 +268,35 @@ final _breakfastEntry = MealEntry(
   ),
   quantity: 2,
 );
+
+DateTime _today() => normalizeLogDate(DateTime.now());
+
+MealEntry _entryFor({
+  required DateTime date,
+  String name = 'Banana',
+  int calories = 105,
+}) {
+  return MealEntry(
+    id: '${logDateKey(date)}-$name',
+    date: date,
+    mealType: MealType.breakfast,
+    foodItem: FoodItem(
+      id: name.toLowerCase(),
+      name: name,
+      calories: calories,
+      proteinGrams: 1.3,
+      carbsGrams: 27,
+      fatGrams: 0.4,
+      fiberGrams: 3.1,
+    ),
+    quantity: 1,
+  );
+}
+
+Color? _calendarDayColor(WidgetTester tester, DateTime date) {
+  final container = tester.widget<Container>(
+    find.byKey(Key('calendar_day_status_${logDateKey(date)}')),
+  );
+  final decoration = container.decoration as BoxDecoration?;
+  return decoration?.color;
+}

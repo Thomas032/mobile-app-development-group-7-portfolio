@@ -1,13 +1,17 @@
 import 'dart:async';
 
 import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/providers/food_search_provider.dart';
+import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class AddFoodScreen extends ConsumerStatefulWidget {
-  const AddFoodScreen({super.key});
+  const AddFoodScreen({super.key, this.target});
+
+  final FoodLogTarget? target;
 
   @override
   ConsumerState<AddFoodScreen> createState() => _AddFoodScreenState();
@@ -28,6 +32,9 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(foodSearchControllerProvider);
+    final selectedDate = ref.watch(selectedLogDateProvider);
+    final target = (widget.target ?? FoodLogTarget(date: selectedDate))
+        .normalized();
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -58,6 +65,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
               child: searchState.when(
                 data: (state) => _FoodResultsList(
                   state: state,
+                  target: target,
                   onLoadMore: () async => ref
                       .read(foodSearchControllerProvider.notifier)
                       .loadMore(),
@@ -150,12 +158,7 @@ class _SearchCommandBar extends StatelessWidget {
                       filled: false,
                       isDense: true,
                       hintText: 'Search everything',
-                      contentPadding: const EdgeInsets.fromLTRB(
-                        16,
-                        14,
-                        8,
-                        14,
-                      ),
+                      contentPadding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
                     ),
                     minLines: 1,
                     textInputAction: TextInputAction.search,
@@ -279,9 +282,14 @@ class _ResultsSummary extends StatelessWidget {
 }
 
 class _FoodResultsList extends StatefulWidget {
-  const _FoodResultsList({required this.state, required this.onLoadMore});
+  const _FoodResultsList({
+    required this.state,
+    required this.target,
+    required this.onLoadMore,
+  });
 
   final FoodSearchState state;
+  final FoodLogTarget target;
   final Future<void> Function() onLoadMore;
 
   @override
@@ -337,6 +345,7 @@ class _FoodResultsListState extends State<_FoodResultsList> {
 
         return _FoodSearchResultTile(
           foodItem: state.items[index],
+          target: widget.target,
           isFirst: index == 0,
           isLast: index == state.items.length - 1,
         );
@@ -375,11 +384,13 @@ class _FoodResultsListState extends State<_FoodResultsList> {
 class _FoodSearchResultTile extends StatelessWidget {
   const _FoodSearchResultTile({
     required this.foodItem,
+    required this.target,
     required this.isFirst,
     required this.isLast,
   });
 
   final FoodItem foodItem;
+  final FoodLogTarget target;
   final bool isFirst;
   final bool isLast;
 
@@ -396,7 +407,10 @@ class _FoodSearchResultTile extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.pushNamed('food-detail', extra: foodItem),
+        onTap: () => context.pushNamed(
+          'food-detail',
+          extra: FoodDetailRouteArgs(foodItem: foodItem, target: target),
+        ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             border: Border(
@@ -442,8 +456,13 @@ class _FoodSearchResultTile extends StatelessWidget {
                 const SizedBox(width: 10),
                 IconButton.filled(
                   tooltip: 'Add ${foodItem.name}',
-                  onPressed: () =>
-                      context.pushNamed('food-detail', extra: foodItem),
+                  onPressed: () => context.pushNamed(
+                    'food-detail',
+                    extra: FoodDetailRouteArgs(
+                      foodItem: foodItem,
+                      target: target,
+                    ),
+                  ),
                   style: IconButton.styleFrom(
                     backgroundColor: colors.primary,
                     foregroundColor: colors.onPrimary,

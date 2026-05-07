@@ -1,7 +1,9 @@
 import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
+import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +11,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum _InputMode { grams, portions }
 
 class FoodDetailScreen extends ConsumerStatefulWidget {
-  const FoodDetailScreen({super.key, required this.foodItem});
+  const FoodDetailScreen({super.key, required this.foodItem, this.target});
 
   final FoodItem? foodItem;
+  final FoodLogTarget? target;
 
   @override
   ConsumerState<FoodDetailScreen> createState() => _FoodDetailScreenState();
@@ -21,15 +24,22 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
   final _quantityController = TextEditingController(text: '100');
 
   late MealType _mealType;
+  late FoodLogTarget _target;
   _InputMode _inputMode = _InputMode.grams;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _mealType = ref
-        .read(mealAssignmentServiceProvider)
-        .assignFor(DateTime.now());
+    _target =
+        (widget.target ??
+                FoodLogTarget(date: ref.read(selectedLogDateProvider)))
+            .normalized();
+    _mealType =
+        _target.mealType ??
+        ref
+            .read(mealAssignmentServiceProvider)
+            .assignFor(_entryDate(DateTime.now()));
     _quantityController.addListener(_onAmountChanged);
   }
 
@@ -244,7 +254,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
     controller.logFood(
       entryId: 'entry-${now.microsecondsSinceEpoch}',
       foodItem: food,
-      date: now,
+      date: _entryDate(now),
       quantity: quantity,
       mealType: _mealType,
     );
@@ -254,6 +264,20 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
       setState(() => _isSaving = false);
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
+  }
+
+  DateTime _entryDate(DateTime now) {
+    final date = _target.date;
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      now.hour,
+      now.minute,
+      now.second,
+      now.millisecond,
+      now.microsecond,
+    );
   }
 }
 

@@ -1,4 +1,6 @@
 import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/food_log_route_args.dart';
+import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:cal_tab/screens/food_detail_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,13 +12,21 @@ import '../fakes/fake_meal_log_repository.dart';
 void main() {
   testWidgets('adds selected search food to the daily log', (tester) async {
     final repository = FakeMealLogRepository();
+    final targetDate = normalizeLogDate(
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           mealLogRepositoryProvider.overrideWith((ref) async => repository),
         ],
-        child: const MaterialApp(home: FoodDetailScreen(foodItem: _banana)),
+        child: MaterialApp(
+          home: FoodDetailScreen(
+            foodItem: _banana,
+            target: FoodLogTarget(date: targetDate, mealType: MealType.lunch),
+          ),
+        ),
       ),
     );
 
@@ -32,6 +42,8 @@ void main() {
     expect(repository.entries, hasLength(1));
     expect(repository.entries.single.foodItem.name, 'Banana');
     expect(repository.entries.single.quantity, 2);
+    expect(normalizeLogDate(repository.entries.single.date), targetDate);
+    expect(repository.entries.single.mealType, MealType.lunch);
     expect(repository.entries.single.calories, 210);
   });
 }

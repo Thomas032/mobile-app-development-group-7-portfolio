@@ -1,4 +1,5 @@
 import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/screens/app_root_screen.dart';
 import 'package:cal_tab/screens/add_food_screen.dart';
 import 'package:cal_tab/screens/food_detail_screen.dart';
@@ -14,13 +15,27 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/add-food',
       name: 'add-food',
-      builder: (context, state) => const AddFoodScreen(),
+      builder: (context, state) {
+        final extra = state.extra;
+        return AddFoodScreen(
+          target: extra is FoodLogTarget ? extra.normalized() : null,
+        );
+      },
     ),
     GoRoute(
       path: '/food-detail',
       name: 'food-detail',
-      builder: (context, state) =>
-          FoodDetailScreen(foodItem: state.extra as FoodItem?),
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is FoodDetailRouteArgs) {
+          return FoodDetailScreen(
+            foodItem: extra.foodItem,
+            target: extra.target.normalized(),
+          );
+        }
+
+        return FoodDetailScreen(foodItem: extra is FoodItem ? extra : null);
+      },
     ),
   ],
 );

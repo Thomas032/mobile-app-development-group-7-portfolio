@@ -1,25 +1,29 @@
+import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/user_profile.dart';
+import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/screens/ai_screen.dart';
 import 'package:cal_tab/screens/home_screen.dart';
 import 'package:cal_tab/screens/settings_screen.dart';
 import 'package:cal_tab/screens/stats_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class MainShellScreen extends StatefulWidget {
+class MainShellScreen extends ConsumerStatefulWidget {
   const MainShellScreen({super.key, required this.profile});
 
   final UserProfile profile;
 
   @override
-  State<MainShellScreen> createState() => _MainShellScreenState();
+  ConsumerState<MainShellScreen> createState() => _MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen> {
+class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   var _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final selectedDate = ref.watch(selectedLogDateProvider);
     final destinations = [
       HomeScreen(profile: widget.profile),
       const StatsScreen(),
@@ -32,7 +36,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
       bottomNavigationBar: _MainBottomBar(
         selectedIndex: _selectedIndex,
         onTabSelected: (index) => setState(() => _selectedIndex = index),
-        onAddFood: () => context.pushNamed('add-food'),
+        onAddFood: () => context.pushNamed(
+          'add-food',
+          extra: FoodLogTarget(date: selectedDate),
+        ),
       ),
     );
   }

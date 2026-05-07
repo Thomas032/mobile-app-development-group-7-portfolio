@@ -1,9 +1,12 @@
 import 'package:cal_tab/models/daily_nutrition_summary.dart';
+import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
+import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/log_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,15 +20,22 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final logState = ref.watch(dailyLogControllerProvider);
     final today = DateTime.now();
-    final summary = logState.summaryFor(date: today, profile: profile);
-    final todayEntries = logState.entriesForDate(today);
+    final selectedDate = ref.watch(selectedLogDateProvider);
+    final summary = logState.summaryFor(date: selectedDate, profile: profile);
+    final selectedEntries = logState.entriesForDate(selectedDate);
     final streak = logState.streakDays(today);
 
     return SafeArea(
       child: Column(
         children: [
-          _TopBar(streak: streak, today: today),
-          _DayStrip(logState: logState, profile: profile, today: today),
+          _TopBar(streak: streak, date: selectedDate),
+          LogCalendar(
+            logState: logState,
+            profile: profile,
+            selectedDate: selectedDate,
+            today: today,
+            onDateSelected: ref.read(selectedLogDateProvider.notifier).select,
+          ),
           Expanded(
             child: ListView(
               key: const Key('home_main_scroll'),
@@ -41,7 +51,10 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 AppCard(
                   padding: EdgeInsets.zero,
-                  child: _MealAccordions(entries: todayEntries),
+                  child: _MealAccordions(
+                    entries: selectedEntries,
+                    date: selectedDate,
+                  ),
                 ),
               ],
             ),
@@ -57,21 +70,31 @@ class HomeScreen extends ConsumerWidget {
 // ──────────────────────────────────────────
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.streak, required this.today});
+  const _TopBar({required this.streak, required this.date});
 
   final int streak;
-  final DateTime today;
+  final DateTime date;
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
-    final dateLabel = '${_months[today.month - 1]} ${today.day}';
+    final dateLabel = '${_months[date.month - 1]} ${date.day}';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -145,142 +168,7 @@ class _PillBadge extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────
-// 7-day strip
 // ──────────────────────────────────────────
-
-class _DayStrip extends StatelessWidget {
-  const _DayStrip({
-    required this.logState,
-    required this.profile,
-    required this.today,
-  });
-
-  final DailyLogState logState;
-  final UserProfile profile;
-  final DateTime today;
-
-  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  @override
-  Widget build(BuildContext context) {
-    final todayNorm = DateTime(today.year, today.month, today.day);
-    final days = List.generate(
-      7,
-      (i) => todayNorm.add(Duration(days: i - 3)),
-    );
-
-    return SizedBox(
-      height: 72,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: days.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final day = days[index];
-          final isToday = day == todayNorm;
-          final isFuture = day.isAfter(todayNorm);
-          final hasEntries = logState.entriesForDate(day).isNotEmpty;
-
-          final style = switch (true) {
-            _ when isToday => _DayChipStyle.today,
-            _ when isFuture => _DayChipStyle.future,
-            _ when hasEntries => _DayChipStyle.logged,
-            _ => _DayChipStyle.missed,
-          };
-
-          return _DayChip(
-            weekday: _weekdays[day.weekday - 1],
-            dayNumber: day.day,
-            style: style,
-          );
-        },
-      ),
-    );
-  }
-}
-
-enum _DayChipStyle { today, logged, missed, future }
-
-class _DayChip extends StatelessWidget {
-  const _DayChip({
-    required this.weekday,
-    required this.dayNumber,
-    required this.style,
-  });
-
-  final String weekday;
-  final int dayNumber;
-  final _DayChipStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    final (bgColor, fgColor, dotColor) = switch (style) {
-      _DayChipStyle.today => (
-          colors.primary,
-          colors.onPrimary,
-          colors.onPrimary.withValues(alpha: 0.6),
-        ),
-      _DayChipStyle.logged => (
-          colors.primaryContainer,
-          colors.onPrimaryContainer,
-          colors.primary,
-        ),
-      _DayChipStyle.missed => (
-          colors.surfaceContainerLow,
-          colors.onSurfaceVariant,
-          Colors.transparent,
-        ),
-      _DayChipStyle.future => (
-          colors.surfaceContainerLowest,
-          colors.onSurfaceVariant.withValues(alpha: 0.45),
-          Colors.transparent,
-        ),
-    };
-
-    return Container(
-      width: 44,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            weekday,
-            style: textTheme.labelSmall?.copyWith(
-              color: fgColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '$dayNumber',
-            style: textTheme.titleSmall?.copyWith(
-              color: fgColor,
-              fontWeight: style == _DayChipStyle.today
-                  ? FontWeight.w800
-                  : FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ──────────────────────────────────────────
 // Calorie gauge
@@ -389,9 +277,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
     );
   }
 }
@@ -472,8 +360,9 @@ class _MacroTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final progress =
-        target <= 0 ? 0.0 : (consumed / target).clamp(0.0, 1.0).toDouble();
+    final progress = target <= 0
+        ? 0.0
+        : (consumed / target).clamp(0.0, 1.0).toDouble();
     final percentage = (progress * 100).round();
 
     return AppCard(
@@ -531,9 +420,10 @@ class _MacroTile extends StatelessWidget {
 // ──────────────────────────────────────────
 
 class _MealAccordions extends StatelessWidget {
-  const _MealAccordions({required this.entries});
+  const _MealAccordions({required this.entries, required this.date});
 
   final List<MealEntry> entries;
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
@@ -544,6 +434,7 @@ class _MealAccordions extends StatelessWidget {
           _MealSection(
             mealType: types[i],
             entries: entries.where((e) => e.mealType == types[i]).toList(),
+            date: date,
             isLast: i == types.length - 1,
           ),
       ],
@@ -555,11 +446,13 @@ class _MealSection extends StatelessWidget {
   const _MealSection({
     required this.mealType,
     required this.entries,
+    required this.date,
     required this.isLast,
   });
 
   final MealType mealType;
   final List<MealEntry> entries;
+  final DateTime date;
   final bool isLast;
 
   @override
@@ -601,7 +494,7 @@ class _MealSection extends StatelessWidget {
                     ],
                   ),
                 ),
-                _AddFoodButton(mealType: mealType),
+                _AddFoodButton(mealType: mealType, date: date),
                 const SizedBox(width: 4),
               ],
             ),
@@ -645,15 +538,20 @@ class _MealSection extends StatelessWidget {
 }
 
 class _AddFoodButton extends StatelessWidget {
-  const _AddFoodButton({required this.mealType});
+  const _AddFoodButton({required this.mealType, required this.date});
 
   final MealType mealType;
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => context.pushNamed('add-food'),
+      key: Key('add_food_${mealType.name}_button'),
+      onTap: () => context.pushNamed(
+        'add-food',
+        extra: FoodLogTarget(date: date, mealType: mealType),
+      ),
       child: Container(
         width: 30,
         height: 30,
