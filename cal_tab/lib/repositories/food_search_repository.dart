@@ -11,9 +11,8 @@ abstract class FoodSearchRepository {
 }
 
 class OpenFoodFactsFoodSearchRepository implements FoodSearchRepository {
-  const OpenFoodFactsFoodSearchRepository({
-    required OpenFoodFactsClient client,
-  }) : _client = client;
+  const OpenFoodFactsFoodSearchRepository({required OpenFoodFactsClient client})
+    : _client = client;
 
   final OpenFoodFactsClient _client;
 
@@ -23,10 +22,6 @@ class OpenFoodFactsFoodSearchRepository implements FoodSearchRepository {
     int page = 1,
     int pageSize = 20,
   }) {
-    return _client.searchProducts(
-      query: query,
-      page: page,
-      pageSize: pageSize,
-    );
+    return _client.searchProducts(query: query, page: page, pageSize: pageSize);
   }
 }

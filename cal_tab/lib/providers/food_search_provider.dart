@@ -113,5 +113,5 @@ class FoodSearchController extends AsyncNotifier<FoodSearchState> {
 
 final foodSearchControllerProvider =
     AsyncNotifierProvider<FoodSearchController, FoodSearchState>(
-  FoodSearchController.new,
-);
+      FoodSearchController.new,
+    );

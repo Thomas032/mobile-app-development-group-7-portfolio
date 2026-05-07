@@ -16,18 +16,22 @@ void main() {
         overrides: [
           mealLogRepositoryProvider.overrideWith((ref) async => repository),
         ],
-        child: const MaterialApp(
-          home: FoodDetailScreen(foodItem: _banana),
-        ),
+        child: const MaterialApp(home: FoodDetailScreen(foodItem: _banana)),
       ),
     );
 
-    await tester.enterText(find.byKey(const Key('detail_quantity_field')), '2');
+    await tester.enterText(
+      find.byKey(const Key('detail_quantity_field')),
+      '200',
+    );
+    await tester.ensureVisible(find.byKey(const Key('add_search_food_button')));
+    await tester.pump();
     await tester.tap(find.byKey(const Key('add_search_food_button')));
     await tester.pumpAndSettle();
 
     expect(repository.entries, hasLength(1));
     expect(repository.entries.single.foodItem.name, 'Banana');
+    expect(repository.entries.single.quantity, 2);
     expect(repository.entries.single.calories, 210);
   });
 }

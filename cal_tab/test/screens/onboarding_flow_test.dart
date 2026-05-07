@@ -1,12 +1,9 @@
 import 'package:cal_tab/providers/repository_providers.dart';
-import 'package:cal_tab/screens/add_food_screen.dart';
 import 'package:cal_tab/screens/app_root_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../fakes/fake_food_search_repository.dart';
-import '../fakes/fake_meal_log_repository.dart';
 import '../fakes/fake_user_profile_repository.dart';
 
 void main() {
@@ -34,53 +31,9 @@ void main() {
     await tester.tap(finishButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('CalTab'), findsOneWidget);
     expect(profileRepository.profile, isNotNull);
     expect(profileRepository.profile!.calorieGoal, 2556);
-  });
-
-  testWidgets('manual food entry persists a meal entry', (tester) async {
-    _useTallViewport(tester);
-    final mealRepository = FakeMealLogRepository();
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          mealLogRepositoryProvider.overrideWith((ref) async => mealRepository),
-          foodSearchRepositoryProvider.overrideWith(
-            (ref) async => FakeFoodSearchRepository(),
-          ),
-        ],
-        child: const MaterialApp(home: AddFoodScreen()),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('manual_food_action_button')));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(
-      find.byKey(const Key('manual_food_name_field')),
-      'Banana',
-    );
-    await tester.enterText(
-      find.byKey(const Key('manual_calories_field')),
-      '105',
-    );
-    await tester.enterText(
-      find.byKey(const Key('manual_protein_field')),
-      '1.3',
-    );
-    await tester.enterText(find.byKey(const Key('manual_carbs_field')), '27');
-    await tester.enterText(find.byKey(const Key('manual_fat_field')), '0.4');
-    await tester.enterText(find.byKey(const Key('manual_fiber_field')), '3.1');
-
-    await tester.tap(find.byKey(const Key('save_manual_food_button')));
-    await tester.pumpAndSettle();
-
-    expect(mealRepository.entries, hasLength(1));
-    expect(mealRepository.entries.single.foodItem.name, 'Banana');
-    expect(mealRepository.entries.single.calories, 105);
   });
 }
 

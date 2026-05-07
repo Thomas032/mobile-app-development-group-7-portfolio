@@ -17,9 +17,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(foodSearchControllerProvider.notifier).search(
-            ' banana ',
-          );
+      await container
+          .read(foodSearchControllerProvider.notifier)
+          .search(' banana ');
 
       expect(repository.lastQuery, 'banana');
       expect(container.read(foodSearchControllerProvider).value?.items, [
@@ -42,6 +42,29 @@ void main() {
         _banana,
       ]);
       expect(repository.lastQuery, '');
+    });
+
+    test('appends the next page when loading more results', () async {
+      final repository = FakeFoodSearchRepository(
+        results: [_banana],
+        totalCount: 60,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          foodSearchRepositoryProvider.overrideWith((ref) async => repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(foodSearchControllerProvider.notifier)
+          .search('banana');
+      await container.read(foodSearchControllerProvider.notifier).loadMore();
+
+      final state = container.read(foodSearchControllerProvider).value;
+      expect(repository.lastPage, 2);
+      expect(state?.items, [_banana, _banana]);
+      expect(state?.hasMore, isTrue);
     });
   });
 }

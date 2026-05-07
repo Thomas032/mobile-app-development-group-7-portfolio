@@ -1,11 +1,7 @@
 import 'dart:async';
 
 import 'package:cal_tab/models/food_item.dart';
-import 'package:cal_tab/models/meal_type.dart';
-import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/food_search_provider.dart';
-import 'package:cal_tab/providers/nutrition_providers.dart';
-import 'package:cal_tab/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,47 +27,26 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final searchState = ref.watch(foodSearchControllerProvider);
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: 'Back',
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Add food',
-                    style: textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.fromLTRB(12, 14, 14, 10),
               child: _SearchCommandBar(
                 controller: _searchController,
                 onChanged: _queueSearch,
                 onSubmitted: (_) => _runSearch(force: true),
                 onBarcode: () => _showUnavailable('Barcode scanning'),
                 onSnap2Cal: () => _showUnavailable('Snap2Cal'),
-                onManualEntry: _openManualFoodSheet,
               ),
             ),
-            const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: searchState.when(
                 data: _ResultsSummary.new,
                 loading: () => const _ResultsSummary.loading(),
@@ -83,14 +58,13 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
               child: searchState.when(
                 data: (state) => _FoodResultsList(
                   state: state,
-                  onLoadMore: () => ref
+                  onLoadMore: () async => ref
                       .read(foodSearchControllerProvider.notifier)
                       .loadMore(),
                 ),
                 loading: _LoadingProductList.new,
-                error: (error, stackTrace) => _SearchErrorState(
-                  onRetry: () => _runSearch(force: true),
-                ),
+                error: (error, stackTrace) =>
+                    _SearchErrorState(onRetry: () => _runSearch(force: true)),
               ),
             ),
           ],
@@ -123,23 +97,10 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
     await ref.read(foodSearchControllerProvider.notifier).search(query);
   }
 
-  Future<void> _openManualFoodSheet() async {
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => const _ManualFoodSheet(),
-    );
-
-    if (saved == true && mounted) {
-      Navigator.of(context).maybePop();
-    }
-  }
-
   void _showUnavailable(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature is not wired up yet.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$feature is not wired up yet.')));
   }
 }
 
@@ -150,7 +111,6 @@ class _SearchCommandBar extends StatelessWidget {
     required this.onSubmitted,
     required this.onBarcode,
     required this.onSnap2Cal,
-    required this.onManualEntry,
   });
 
   final TextEditingController controller;
@@ -158,50 +118,67 @@ class _SearchCommandBar extends StatelessWidget {
   final ValueChanged<String> onSubmitted;
   final VoidCallback onBarcode;
   final VoidCallback onSnap2Cal;
-  final VoidCallback onManualEntry;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              key: const Key('food_search_field'),
-              controller: controller,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search food, brand, barcode...',
-              ),
-              minLines: 1,
-              textInputAction: TextInputAction.search,
-              onChanged: onChanged,
-              onSubmitted: onSubmitted,
+    return Row(
+      children: [
+        IconButton(
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('food_search_field'),
+                    controller: controller,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      isDense: true,
+                      hintText: 'Search everything',
+                      contentPadding: const EdgeInsets.fromLTRB(
+                        16,
+                        14,
+                        8,
+                        14,
+                      ),
+                    ),
+                    minLines: 1,
+                    textInputAction: TextInputAction.search,
+                    onChanged: onChanged,
+                    onSubmitted: onSubmitted,
+                  ),
+                ),
+                _CommandIconButton(
+                  tooltip: 'Barcode scanner',
+                  icon: Icons.qr_code_scanner,
+                  onPressed: onBarcode,
+                ),
+                _CommandIconButton(
+                  tooltip: 'Snap2Cal',
+                  icon: Icons.photo_camera_outlined,
+                  onPressed: onSnap2Cal,
+                ),
+                const SizedBox(width: 4),
+              ],
             ),
           ),
-          _CommandIconButton(
-            tooltip: 'Barcode scanner',
-            icon: Icons.qr_code_scanner,
-            onPressed: onBarcode,
-          ),
-          _CommandIconButton(
-            tooltip: 'Snap2Cal',
-            icon: Icons.photo_camera_outlined,
-            onPressed: onSnap2Cal,
-          ),
-          _CommandIconButton(
-            key: const Key('manual_food_action_button'),
-            tooltip: 'Define own meal',
-            icon: Icons.edit_note,
-            color: colors.primary,
-            onPressed: onManualEntry,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -227,25 +204,29 @@ class _CommandIconButton extends StatelessWidget {
       visualDensity: VisualDensity.compact,
       color: color,
       onPressed: onPressed,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: color ?? Theme.of(context).colorScheme.onSurface,
+        minimumSize: const Size.square(40),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       icon: Icon(icon),
     );
   }
 }
 
 class _ResultsSummary extends StatelessWidget {
-  const _ResultsSummary(this.state)
-      : title = null,
-        subtitle = null;
+  const _ResultsSummary(this.state) : title = null, subtitle = null;
 
   const _ResultsSummary.loading()
-      : state = null,
-        title = 'Loading products',
-        subtitle = 'Fetching Open Food Facts';
+    : state = null,
+      title = 'Loading products',
+      subtitle = 'Fetching Open Food Facts';
 
   const _ResultsSummary.error()
-      : state = null,
-        title = 'Could not load products',
-        subtitle = 'Check your connection and try again';
+    : state = null,
+      title = 'Could not load products',
+      subtitle = 'Check your connection and try again';
 
   final FoodSearchState? state;
   final String? title;
@@ -256,14 +237,17 @@ class _ResultsSummary extends StatelessWidget {
     final searchState = state;
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
-    final resolvedTitle = title ??
+    final resolvedTitle =
+        title ??
         (searchState!.isBrowsing
-            ? 'All products'
+            ? 'Most common items'
             : 'Results for "${searchState.query}"');
     final shownCount = searchState?.items.length ?? 0;
     final totalCount = searchState?.totalCount ?? 0;
     final resolvedSubtitle =
-        subtitle ?? '$shownCount shown${totalCount > 0 ? ' of $totalCount' : ''}';
+        subtitle ??
+        '$shownCount shown${totalCount > 0 ? ' of $totalCount' : ''}';
+    final showSubtitle = searchState?.isBrowsing == false || title != null;
 
     return Row(
       children: [
@@ -277,13 +261,15 @@ class _ResultsSummary extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                resolvedSubtitle,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
+              if (showSubtitle) ...[
+                const SizedBox(height: 2),
+                Text(
+                  resolvedSubtitle,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -292,113 +278,184 @@ class _ResultsSummary extends StatelessWidget {
   }
 }
 
-class _FoodResultsList extends StatelessWidget {
-  const _FoodResultsList({
-    required this.state,
-    required this.onLoadMore,
-  });
+class _FoodResultsList extends StatefulWidget {
+  const _FoodResultsList({required this.state, required this.onLoadMore});
 
   final FoodSearchState state;
-  final VoidCallback onLoadMore;
+  final Future<void> Function() onLoadMore;
+
+  @override
+  State<_FoodResultsList> createState() => _FoodResultsListState();
+}
+
+class _FoodResultsListState extends State<_FoodResultsList> {
+  final _scrollController = ScrollController();
+  bool _loadMoreInFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_maybeLoadMore);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore());
+  }
+
+  @override
+  void didUpdateWidget(covariant _FoodResultsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.items.length != widget.state.items.length ||
+        oldWidget.state.isLoadingMore != widget.state.isLoadingMore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadMore());
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     if (state.items.isEmpty) {
       return const _EmptyResultsState();
     }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification.metrics.extentAfter < 320 &&
-            state.hasMore &&
-            !state.isLoadingMore) {
-          onLoadMore();
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
+      cacheExtent: 520,
+      itemCount: state.items.length + 1,
+      itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return _LoadMoreFooter(
+            hasMore: state.hasMore,
+            isLoadingMore: state.isLoadingMore || _loadMoreInFlight,
+            onLoadMore: _requestLoadMore,
+          );
         }
-        return false;
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        cacheExtent: 400,
-        itemBuilder: (context, index) {
-          if (index == state.items.length) {
-            return _LoadMoreFooter(
-              hasMore: state.hasMore,
-              isLoadingMore: state.isLoadingMore,
-              onLoadMore: onLoadMore,
-            );
-          }
 
-          return _FoodSearchResultTile(foodItem: state.items[index]);
-        },
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemCount: state.items.length + 1,
-      ),
+        return _FoodSearchResultTile(
+          foodItem: state.items[index],
+          isFirst: index == 0,
+          isLast: index == state.items.length - 1,
+        );
+      },
     );
+  }
+
+  void _maybeLoadMore() {
+    if (!mounted || !_scrollController.hasClients) {
+      return;
+    }
+
+    if (_scrollController.position.extentAfter < 420) {
+      _requestLoadMore();
+    }
+  }
+
+  Future<void> _requestLoadMore() async {
+    if (_loadMoreInFlight ||
+        !widget.state.hasMore ||
+        widget.state.isLoadingMore) {
+      return;
+    }
+
+    setState(() => _loadMoreInFlight = true);
+    try {
+      await widget.onLoadMore();
+    } finally {
+      if (mounted) {
+        setState(() => _loadMoreInFlight = false);
+      }
+    }
   }
 }
 
 class _FoodSearchResultTile extends StatelessWidget {
-  const _FoodSearchResultTile({required this.foodItem});
+  const _FoodSearchResultTile({
+    required this.foodItem,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   final FoodItem foodItem;
+  final bool isFirst;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        leading: _FoodThumbnail(imageUrl: foodItem.imageUrl),
-        title: Text(
-          foodItem.name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            'P ${foodItem.proteinGrams.toStringAsFixed(1)}g · '
-            'C ${foodItem.carbsGrams.toStringAsFixed(1)}g · '
-            'F ${foodItem.fatGrams.toStringAsFixed(1)}g',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
+    return Material(
+      color: colors.surfaceContainerLow,
+      borderRadius: BorderRadius.vertical(
+        top: isFirst ? const Radius.circular(18) : Radius.zero,
+        bottom: isLast ? const Radius.circular(18) : Radius.zero,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.pushNamed('food-detail', extra: foodItem),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: isLast ? Colors.transparent : colors.outlineVariant,
+                width: 0.5,
+              ),
             ),
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+            child: Row(
               children: [
-                Text(
-                  '${foodItem.calories}',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: colors.primary,
+                _FoodThumbnail(imageUrl: foodItem.imageUrl),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        foodItem.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${foodItem.calories} kcal /100g',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  'kcal',
-                  style: textTheme.labelSmall?.copyWith(
-                    color: colors.onSurfaceVariant,
+                const SizedBox(width: 10),
+                IconButton.filled(
+                  tooltip: 'Add ${foodItem.name}',
+                  onPressed: () =>
+                      context.pushNamed('food-detail', extra: foodItem),
+                  style: IconButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
+                    minimumSize: const Size.square(32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
+                  icon: const Icon(Icons.add, size: 20),
                 ),
               ],
             ),
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
-          ],
+          ),
         ),
-        onTap: () => context.pushNamed('food-detail', extra: foodItem),
       ),
     );
   }
@@ -418,24 +475,24 @@ class _FoodThumbnail extends StatelessWidget {
       child: ColoredBox(
         color: colors.surfaceContainerHigh,
         child: SizedBox.square(
-          dimension: 52,
+          dimension: 58,
           child: imageUrl == null
               ? Icon(Icons.restaurant, color: colors.onSurfaceVariant)
               : Image.network(
-              imageUrl!,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colors.surfaceContainerHigh,
-                  ),
-                  child: const SizedBox.expand(),
-                );
-              },
-              errorBuilder: (_, __, ___) =>
-                  Icon(Icons.restaurant, color: colors.onSurfaceVariant),
-            ),
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHigh,
+                      ),
+                      child: const SizedBox.expand(),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.restaurant, color: colors.onSurfaceVariant),
+                ),
         ),
       ),
     );
@@ -461,7 +518,7 @@ class _LoadMoreFooter extends StatelessWidget {
 
     if (isLoadingMore) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -482,27 +539,44 @@ class _LoadingProductList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-      itemBuilder: (context, index) => AppCard(
-        child: Row(
-          children: [
-            const _SkeletonBox(width: 52, height: 52),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  _SkeletonBox(width: 180, height: 16),
-                  SizedBox(height: 10),
-                  _SkeletonBox(width: 240, height: 12),
-                ],
-              ),
+    final colors = Theme.of(context).colorScheme;
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
+      itemBuilder: (context, index) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerLow,
+          borderRadius: BorderRadius.vertical(
+            top: index == 0 ? const Radius.circular(18) : Radius.zero,
+            bottom: index == 5 ? const Radius.circular(18) : Radius.zero,
+          ),
+          border: Border(
+            bottom: BorderSide(
+              color: index == 5 ? Colors.transparent : colors.outlineVariant,
+              width: 0.5,
             ),
-          ],
+          ),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Row(
+            children: [
+              _SkeletonBox(width: 58, height: 58),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SkeletonBox(width: 180, height: 16),
+                    SizedBox(height: 10),
+                    _SkeletonBox(width: 96, height: 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemCount: 6,
     );
   }
@@ -530,9 +604,10 @@ class _SkeletonBoxState extends State<_SkeletonBox>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -606,256 +681,6 @@ class _SearchErrorState extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ManualFoodSheet extends ConsumerStatefulWidget {
-  const _ManualFoodSheet();
-
-  @override
-  ConsumerState<_ManualFoodSheet> createState() => _ManualFoodSheetState();
-}
-
-class _ManualFoodSheetState extends ConsumerState<_ManualFoodSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _caloriesController = TextEditingController();
-  final _proteinController = TextEditingController(text: '0');
-  final _carbsController = TextEditingController(text: '0');
-  final _fatController = TextEditingController(text: '0');
-  final _fiberController = TextEditingController(text: '0');
-  final _quantityController = TextEditingController(text: '1');
-
-  late MealType _mealType;
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _mealType = ref
-        .read(mealAssignmentServiceProvider)
-        .assignFor(DateTime.now());
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _caloriesController.dispose();
-    _proteinController.dispose();
-    _carbsController.dispose();
-    _fatController.dispose();
-    _fiberController.dispose();
-    _quantityController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final viewInsets = MediaQuery.viewInsetsOf(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: viewInsets.bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const SizedBox(width: 44, height: 4),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Define own meal',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                key: const Key('manual_food_name_field'),
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Food name'),
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Enter a food name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _NumberField(
-                fieldKey: const Key('manual_calories_field'),
-                controller: _caloriesController,
-                label: 'Calories',
-                suffix: 'kcal',
-                allowZero: false,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _NumberField(
-                      fieldKey: const Key('manual_protein_field'),
-                      controller: _proteinController,
-                      label: 'Protein',
-                      suffix: 'g',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _NumberField(
-                      fieldKey: const Key('manual_carbs_field'),
-                      controller: _carbsController,
-                      label: 'Carbs',
-                      suffix: 'g',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _NumberField(
-                      fieldKey: const Key('manual_fat_field'),
-                      controller: _fatController,
-                      label: 'Fat',
-                      suffix: 'g',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _NumberField(
-                      fieldKey: const Key('manual_fiber_field'),
-                      controller: _fiberController,
-                      label: 'Fiber',
-                      suffix: 'g',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _NumberField(
-                fieldKey: const Key('manual_quantity_field'),
-                controller: _quantityController,
-                label: 'Quantity',
-                suffix: 'servings',
-                allowZero: false,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<MealType>(
-                key: const Key('manual_meal_type_field'),
-                value: _mealType,
-                decoration: const InputDecoration(labelText: 'Meal'),
-                items: [
-                  for (final mealType in MealType.values)
-                    DropdownMenuItem(
-                      value: mealType,
-                      child: Text(mealType.label),
-                    ),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _mealType = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                key: const Key('save_manual_food_button'),
-                onPressed: _isSaving ? null : _saveFood,
-                icon: _isSaving
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check),
-                label: const Text('Add to day'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveFood() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    final now = DateTime.now();
-    final food = FoodItem(
-      id: 'manual-${now.microsecondsSinceEpoch}',
-      name: _nameController.text.trim(),
-      calories: double.parse(_caloriesController.text).round(),
-      proteinGrams: double.parse(_proteinController.text),
-      carbsGrams: double.parse(_carbsController.text),
-      fatGrams: double.parse(_fatController.text),
-      fiberGrams: double.parse(_fiberController.text),
-    );
-
-    final controller = ref.read(dailyLogControllerProvider.notifier);
-    controller.logFood(
-      entryId: 'entry-${now.microsecondsSinceEpoch}',
-      foodItem: food,
-      date: now,
-      quantity: double.parse(_quantityController.text),
-      mealType: _mealType,
-    );
-    await controller.saveCurrentEntries();
-
-    if (mounted) {
-      Navigator.of(context).pop(true);
-    }
-  }
-}
-
-class _NumberField extends StatelessWidget {
-  const _NumberField({
-    required this.fieldKey,
-    required this.controller,
-    required this.label,
-    required this.suffix,
-    this.allowZero = true,
-  });
-
-  final Key fieldKey;
-  final TextEditingController controller;
-  final String label;
-  final String suffix;
-  final bool allowZero;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      key: fieldKey,
-      controller: controller,
-      decoration: InputDecoration(labelText: label, suffixText: suffix),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      validator: (value) {
-        final parsed = num.tryParse(value ?? '');
-        final isValid =
-            parsed != null && (allowZero ? parsed >= 0 : parsed > 0);
-        if (!isValid) {
-          return allowZero ? 'Use 0 or more' : 'Use more than 0';
-        }
-        return null;
-      },
     );
   }
 }

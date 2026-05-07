@@ -15,11 +15,9 @@ class FoodSearchException implements Exception {
 }
 
 class OpenFoodFactsClient {
-  OpenFoodFactsClient({
-    required http.Client httpClient,
-    Uri? baseUri,
-  })  : baseUri = baseUri ?? Uri.https('world.openfoodfacts.org'),
-        _httpClient = httpClient;
+  OpenFoodFactsClient({required http.Client httpClient, Uri? baseUri})
+    : baseUri = baseUri ?? Uri.https('world.openfoodfacts.org'),
+      _httpClient = httpClient;
 
   final http.Client _httpClient;
   final Uri baseUri;
@@ -69,7 +67,8 @@ class OpenFoodFactsClient {
     final products = decoded['products'] as List<dynamic>? ?? const [];
     final totalCount = (decoded['count'] as num?)?.toInt() ?? products.length;
     final responsePage = (decoded['page'] as num?)?.toInt() ?? page;
-    final responsePageSize = (decoded['page_size'] as num?)?.toInt() ?? pageSize;
+    final responsePageSize =
+        (decoded['page_size'] as num?)?.toInt() ?? pageSize;
 
     final items = products
         .whereType<Map<String, dynamic>>()
@@ -95,7 +94,8 @@ FoodItem? _foodItemFromOpenFoodFacts(Map<String, dynamic> json) {
     return null;
   }
 
-  final calories = _nutriment(nutriments, 'energy-kcal_100g') ??
+  final calories =
+      _nutriment(nutriments, 'energy-kcal_100g') ??
       _nutriment(nutriments, 'energy-kcal') ??
       0;
 
@@ -107,7 +107,8 @@ FoodItem? _foodItemFromOpenFoodFacts(Map<String, dynamic> json) {
     carbsGrams: _nutriment(nutriments, 'carbohydrates_100g') ?? 0,
     fatGrams: _nutriment(nutriments, 'fat_100g') ?? 0,
     fiberGrams: _nutriment(nutriments, 'fiber_100g') ?? 0,
-    imageUrl: json['image_front_url'] as String? ?? json['image_url'] as String?,
+    imageUrl:
+        json['image_front_url'] as String? ?? json['image_url'] as String?,
   );
 }
 

@@ -31,6 +31,18 @@ class DailyLogState {
     );
   }
 
+  /// Returns the number of consecutive days ending on [today] that have at
+  /// least one logged entry. Returns 0 if today has no entries.
+  int streakDays(DateTime today) {
+    var streak = 0;
+    var day = DateTime(today.year, today.month, today.day);
+    while (entries.any((e) => _isSameDay(e.date, day))) {
+      streak++;
+      day = day.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }

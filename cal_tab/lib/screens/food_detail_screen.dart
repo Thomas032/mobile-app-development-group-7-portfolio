@@ -143,8 +143,9 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                       labelText: _inputMode == _InputMode.grams
                           ? 'Amount'
                           : 'Portions',
-                      suffixText:
-                          _inputMode == _InputMode.grams ? 'g' : '× 100g',
+                      suffixText: _inputMode == _InputMode.grams
+                          ? 'g'
+                          : '× 100g',
                     ),
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
@@ -231,8 +232,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
     if (raw == null || raw <= 0) {
       return;
     }
-    final quantity =
-        _inputMode == _InputMode.grams ? raw / 100.0 : raw;
+    final quantity = _inputMode == _InputMode.grams ? raw / 100.0 : raw;
     if (quantity <= 0) {
       return;
     }

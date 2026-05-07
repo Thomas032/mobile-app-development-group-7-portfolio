@@ -155,6 +155,65 @@ void main() {
       expect(repository.entries.single.id, 'entry-1');
     });
   });
+
+  group('DailyLogState.streakDays', () {
+    final today = DateTime(2026, 5, 6);
+
+    DailyLogState _stateWith(List<MealEntry> entries) =>
+        DailyLogState(entries: entries);
+
+    MealEntry _entryOn(DateTime date, String id) => MealEntry(
+          id: id,
+          date: date,
+          mealType: MealType.breakfast,
+          foodItem: _banana,
+          quantity: 1,
+        );
+
+    test('returns 0 when there are no entries', () {
+      expect(_stateWith([]).streakDays(today), 0);
+    });
+
+    test('returns 1 when only today has an entry', () {
+      final state = _stateWith([_entryOn(DateTime(2026, 5, 6, 8), 'e1')]);
+      expect(state.streakDays(today), 1);
+    });
+
+    test('counts consecutive days backwards from today', () {
+      final state = _stateWith([
+        _entryOn(DateTime(2026, 5, 6, 8), 'e1'),
+        _entryOn(DateTime(2026, 5, 5, 8), 'e2'),
+        _entryOn(DateTime(2026, 5, 4, 8), 'e3'),
+      ]);
+      expect(state.streakDays(today), 3);
+    });
+
+    test('stops at a gap day', () {
+      final state = _stateWith([
+        _entryOn(DateTime(2026, 5, 6, 8), 'e1'),
+        // May 5 is missing
+        _entryOn(DateTime(2026, 5, 4, 8), 'e2'),
+      ]);
+      expect(state.streakDays(today), 1);
+    });
+
+    test('returns 0 when today has no entry but earlier days do', () {
+      final state = _stateWith([
+        _entryOn(DateTime(2026, 5, 5, 8), 'e1'),
+        _entryOn(DateTime(2026, 5, 4, 8), 'e2'),
+      ]);
+      expect(state.streakDays(today), 0);
+    });
+
+    test('multiple entries on the same day count as one streak day', () {
+      final state = _stateWith([
+        _entryOn(DateTime(2026, 5, 6, 8), 'e1'),
+        _entryOn(DateTime(2026, 5, 6, 13), 'e2'),
+        _entryOn(DateTime(2026, 5, 5, 8), 'e3'),
+      ]);
+      expect(state.streakDays(today), 2);
+    });
+  });
 }
 
 final _entry = MealEntry(

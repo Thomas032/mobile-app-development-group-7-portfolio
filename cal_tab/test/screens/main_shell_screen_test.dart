@@ -16,7 +16,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('CalTab'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('stats_tab_button')));
     await tester.pumpAndSettle();

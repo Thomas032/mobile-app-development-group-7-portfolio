@@ -19,9 +19,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/food-detail',
       name: 'food-detail',
-      builder: (context, state) => FoodDetailScreen(
-        foodItem: state.extra as FoodItem?,
-      ),
+      builder: (context, state) =>
+          FoodDetailScreen(foodItem: state.extra as FoodItem?),
     ),
   ],
 );
