@@ -29,31 +29,41 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         children: [
           _TopBar(streak: streak, date: selectedDate),
-          LogCalendar(
-            logState: logState,
-            profile: profile,
-            selectedDate: selectedDate,
-            today: today,
-            onDateSelected: ref.read(selectedLogDateProvider.notifier).select,
-          ),
           Expanded(
             child: ListView(
               key: const Key('home_main_scroll'),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 104),
+              padding: const EdgeInsets.fromLTRB(0, 12, 0, 104),
               children: [
-                _CalorieGauge(summary: summary),
-                const SizedBox(height: 24),
-                const _SectionLabel(text: 'Nutrients'),
-                const SizedBox(height: 12),
-                _MacroGrid(summary: summary, profile: profile),
-                const SizedBox(height: 24),
-                const _SectionLabel(text: 'Meals'),
-                const SizedBox(height: 12),
-                AppCard(
-                  padding: EdgeInsets.zero,
-                  child: _MealAccordions(
-                    entries: selectedEntries,
-                    date: selectedDate,
+                LogCalendar(
+                  logState: logState,
+                  profile: profile,
+                  selectedDate: selectedDate,
+                  today: today,
+                  onDateSelected: ref
+                      .read(selectedLogDateProvider.notifier)
+                      .select,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _CalorieGauge(summary: summary),
+                      const SizedBox(height: 24),
+                      const _SectionLabel(text: 'Nutrients'),
+                      const SizedBox(height: 12),
+                      _MacroGrid(summary: summary, profile: profile),
+                      const SizedBox(height: 24),
+                      const _SectionLabel(text: 'Meals'),
+                      const SizedBox(height: 12),
+                      AppCard(
+                        padding: EdgeInsets.zero,
+                        child: _MealAccordions(
+                          entries: selectedEntries,
+                          date: selectedDate,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
