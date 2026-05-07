@@ -565,29 +565,7 @@ class _MealSection extends StatelessWidget {
               ],
             ),
             children: [
-              for (final entry in entries)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          entry.foodItem.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodyMedium,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${entry.calories} kcal',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _MealEntriesPanel(entries: entries),
             ],
           ),
         ),
@@ -599,6 +577,92 @@ class _MealSection extends StatelessWidget {
             color: colors.outlineVariant.withValues(alpha: 0.5),
           ),
       ],
+    );
+  }
+}
+
+class _MealEntriesPanel extends StatelessWidget {
+  const _MealEntriesPanel({required this.entries});
+
+  final List<MealEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        child: entries.isEmpty
+            ? SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Text(
+                    'No food logged yet',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              )
+            : Column(
+                children: [
+                  for (var i = 0; i < entries.length; i++) ...[
+                    _MealEntryRow(entry: entries[i]),
+                    if (i != entries.length - 1)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: colors.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                  ],
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _MealEntryRow extends StatelessWidget {
+  const _MealEntryRow({required this.entry});
+
+  final MealEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              entry.foodItem.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${entry.calories} kcal',
+            style: textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
