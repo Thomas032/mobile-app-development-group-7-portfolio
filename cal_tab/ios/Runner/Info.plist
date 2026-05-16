@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>CalTab uses the camera to scan barcodes and estimate calories from food photos via Snap2Cal.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CalTab can read photos of food to estimate calories via Snap2Cal.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
