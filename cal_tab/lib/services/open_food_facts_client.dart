@@ -83,6 +83,53 @@ class OpenFoodFactsClient {
       totalCount: totalCount,
     );
   }
+
+  Future<FoodItem?> fetchByBarcode(String barcode) async {
+    final trimmed = barcode.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final uri = baseUri.replace(
+      path: '/api/v2/product/$trimmed.json',
+      queryParameters: {
+        'fields':
+            'code,product_name,brands,nutriments,image_front_url,image_url',
+      },
+    );
+
+    final response = await _httpClient.get(
+      uri,
+      headers: const {
+        HttpHeaders.acceptHeader: 'application/json',
+        HttpHeaders.userAgentHeader: userAgent,
+      },
+    );
+
+    if (response.statusCode == 404) {
+      return null;
+    }
+    if (response.statusCode != 200) {
+      throw FoodSearchException(
+        'Open Food Facts barcode lookup failed with status ${response.statusCode}.',
+      );
+    }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final status = decoded['status'];
+    final isFound =
+        (status is num && status == 1) || (status is String && status == '1');
+    if (!isFound) {
+      return null;
+    }
+
+    final product = decoded['product'];
+    if (product is! Map<String, dynamic>) {
+      return null;
+    }
+
+    return _foodItemFromOpenFoodFacts(product);
+  }
 }
 
 FoodItem? _foodItemFromOpenFoodFacts(Map<String, dynamic> json) {

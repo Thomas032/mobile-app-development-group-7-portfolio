@@ -16,6 +16,9 @@ class FakeFoodSearchRepository implements FoodSearchRepository {
   String? lastQuery;
   int? lastPage;
   int? lastPageSize;
+  String? lastBarcode;
+  FoodItem? barcodeResult;
+  Object? barcodeError;
 
   @override
   Future<FoodSearchPage> searchFoods({
@@ -36,5 +39,15 @@ class FakeFoodSearchRepository implements FoodSearchRepository {
       pageSize: pageSize,
       totalCount: totalCount ?? results.length,
     );
+  }
+
+  @override
+  Future<FoodItem?> fetchByBarcode(String barcode) async {
+    lastBarcode = barcode;
+    final error = barcodeError;
+    if (error != null) {
+      throw error;
+    }
+    return barcodeResult;
   }
 }
