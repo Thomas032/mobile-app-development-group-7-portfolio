@@ -1,3 +1,4 @@
+import 'package:cal_tab/providers/ai_api_key_provider.dart';
 import 'package:cal_tab/providers/app_settings_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
@@ -8,5 +9,6 @@ final appStartupProvider = FutureProvider<void>((ref) async {
     ref.read(appSettingsControllerProvider.notifier).loadSavedSettings(),
     ref.read(profileSetupControllerProvider.notifier).loadSavedProfile(),
     ref.read(dailyLogControllerProvider.notifier).loadSavedEntries(),
+    ref.read(aiApiKeyControllerProvider.future),
   ]);
 });

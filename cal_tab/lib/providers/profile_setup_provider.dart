@@ -1,3 +1,4 @@
+import 'package:cal_tab/models/macro_targets.dart';
 import 'package:cal_tab/models/profile_setup_input.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
@@ -65,6 +66,48 @@ class ProfileSetupController extends Notifier<ProfileSetupState> {
 
     final repository = await ref.read(userProfileRepositoryProvider.future);
     await repository.saveProfile(profile);
+  }
+
+  Future<void> updateTargets({
+    required int calorieGoal,
+    required MacroTargets macroTargets,
+  }) async {
+    final current = state.profile;
+    if (current == null) return;
+    state = state.copyWith(
+      profile: current.copyWith(
+        calorieGoal: calorieGoal,
+        macroTargets: macroTargets,
+      ),
+    );
+    await saveCurrentProfile();
+  }
+
+  Future<void> updateProfileInputs(ProfileSetupInput input) async {
+    final current = state.profile;
+    if (current == null) return;
+    final calculator = ref.read(nutritionCalculatorProvider);
+    final targets = calculator.calculateTargets(
+      weightKg: input.weightKg,
+      heightCm: input.heightCm,
+      age: input.age,
+      gender: input.gender,
+      activityLevel: input.activityLevel,
+      goalType: input.goalType,
+    );
+    state = state.copyWith(
+      profile: current.copyWith(
+        age: input.age,
+        heightCm: input.heightCm,
+        weightKg: input.weightKg,
+        gender: input.gender,
+        activityLevel: input.activityLevel,
+        goalType: input.goalType,
+        calorieGoal: targets.calorieGoal,
+        macroTargets: targets.macroTargets,
+      ),
+    );
+    await saveCurrentProfile();
   }
 
   Future<void> clearSavedProfile() async {
