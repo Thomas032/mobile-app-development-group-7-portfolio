@@ -11,20 +11,12 @@ enum AppThemeMode {
 }
 
 class AppSettings {
-  const AppSettings({this.themeMode = AppThemeMode.system, this.aiApiKey});
+  const AppSettings({this.themeMode = AppThemeMode.system});
 
   final AppThemeMode themeMode;
-  final String? aiApiKey;
 
-  AppSettings copyWith({
-    AppThemeMode? themeMode,
-    String? aiApiKey,
-    bool clearAiApiKey = false,
-  }) {
-    return AppSettings(
-      themeMode: themeMode ?? this.themeMode,
-      aiApiKey: clearAiApiKey ? null : aiApiKey ?? this.aiApiKey,
-    );
+  AppSettings copyWith({AppThemeMode? themeMode}) {
+    return AppSettings(themeMode: themeMode ?? this.themeMode);
   }
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -32,11 +24,10 @@ class AppSettings {
       themeMode: AppThemeMode.fromJson(
         json['themeMode'] as String? ?? AppThemeMode.system.name,
       ),
-      aiApiKey: json['aiApiKey'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'themeMode': themeMode.toJson(), 'aiApiKey': aiApiKey};
+    return {'themeMode': themeMode.toJson()};
   }
 }

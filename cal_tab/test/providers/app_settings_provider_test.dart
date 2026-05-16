@@ -10,10 +10,7 @@ void main() {
   group('AppSettingsController', () {
     test('loads saved settings from the repository', () async {
       final repository = FakeAppSettingsRepository(
-        initialSettings: const AppSettings(
-          themeMode: AppThemeMode.dark,
-          aiApiKey: 'saved-key',
-        ),
+        initialSettings: const AppSettings(themeMode: AppThemeMode.dark),
       );
       final container = _container(repository);
       addTearDown(container.dispose);
@@ -25,7 +22,6 @@ void main() {
       final settings = container.read(appSettingsControllerProvider);
 
       expect(settings.themeMode, AppThemeMode.dark);
-      expect(settings.aiApiKey, 'saved-key');
     });
 
     test('updates theme mode and persists it', () async {
@@ -42,19 +38,6 @@ void main() {
         AppThemeMode.light,
       );
       expect(repository.settings.themeMode, AppThemeMode.light);
-    });
-
-    test('updates and clears the AI API key', () async {
-      final repository = FakeAppSettingsRepository();
-      final container = _container(repository);
-      addTearDown(container.dispose);
-      final controller = container.read(appSettingsControllerProvider.notifier);
-
-      await controller.updateAiApiKey('test-key');
-      await controller.updateAiApiKey('');
-
-      expect(container.read(appSettingsControllerProvider).aiApiKey, isNull);
-      expect(repository.settings.aiApiKey, isNull);
     });
   });
 }
