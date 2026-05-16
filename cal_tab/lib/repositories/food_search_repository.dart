@@ -8,6 +8,8 @@ abstract class FoodSearchRepository {
     int page = 1,
     int pageSize = 20,
   });
+
+  Future<FoodItem?> findFoodByBarcode(String barcode);
 }
 
 class OpenFoodFactsFoodSearchRepository implements FoodSearchRepository {
@@ -23,5 +25,10 @@ class OpenFoodFactsFoodSearchRepository implements FoodSearchRepository {
     int pageSize = 20,
   }) {
     return _client.searchProducts(query: query, page: page, pageSize: pageSize);
+  }
+
+  @override
+  Future<FoodItem?> findFoodByBarcode(String barcode) {
+    return _client.getProductByBarcode(barcode);
   }
 }

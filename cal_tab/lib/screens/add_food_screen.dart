@@ -48,7 +48,8 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                 controller: _searchController,
                 onChanged: _queueSearch,
                 onSubmitted: (_) => _runSearch(force: true),
-                onBarcode: () => _showUnavailable('Barcode scanning'),
+                onBarcode: () =>
+                    context.pushNamed('scan-barcode', extra: target),
                 onSnap2Cal: () => _showUnavailable('Snap2Cal'),
               ),
             ),

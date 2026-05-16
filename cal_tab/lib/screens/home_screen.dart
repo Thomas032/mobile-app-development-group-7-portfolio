@@ -564,9 +564,7 @@ class _MealSection extends StatelessWidget {
                 const SizedBox(width: 4),
               ],
             ),
-            children: [
-              _MealEntriesPanel(entries: entries),
-            ],
+            children: [_MealEntriesPanel(entries: entries)],
           ),
         ),
         if (!isLast)

@@ -63,7 +63,10 @@ class OpenFoodFactsClient {
       );
     }
 
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final decoded = _decodeObject(
+      response.body,
+      fallbackMessage: 'Open Food Facts search returned invalid data.',
+    );
     final products = decoded['products'] as List<dynamic>? ?? const [];
     final totalCount = (decoded['count'] as num?)?.toInt() ?? products.length;
     final responsePage = (decoded['page'] as num?)?.toInt() ?? page;
@@ -83,6 +86,76 @@ class OpenFoodFactsClient {
       totalCount: totalCount,
     );
   }
+
+  Future<FoodItem?> getProductByBarcode(String barcode) async {
+    final trimmedBarcode = barcode.trim();
+    if (trimmedBarcode.isEmpty) {
+      return null;
+    }
+
+    final uri = baseUri.replace(
+      path: '/api/v2/product/$trimmedBarcode',
+      queryParameters: const {
+        'fields':
+            'code,product_name,brands,nutriments,image_front_url,image_url',
+      },
+    );
+
+    final response = await _httpClient.get(
+      uri,
+      headers: const {
+        HttpHeaders.acceptHeader: 'application/json',
+        HttpHeaders.userAgentHeader: userAgent,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw FoodSearchException(
+        'Open Food Facts barcode lookup failed with status ${response.statusCode}.',
+      );
+    }
+
+    final decoded = _decodeObject(
+      response.body,
+      fallbackMessage: 'Open Food Facts barcode lookup returned invalid data.',
+    );
+    if (_isNotFoundResponse(decoded)) {
+      return null;
+    }
+
+    final product = decoded['product'];
+    if (product is! Map<String, dynamic>) {
+      return null;
+    }
+
+    return _foodItemFromOpenFoodFacts(product);
+  }
+}
+
+Map<String, dynamic> _decodeObject(
+  String body, {
+  required String fallbackMessage,
+}) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+  } on FormatException {
+    throw FoodSearchException(fallbackMessage);
+  }
+  throw FoodSearchException(fallbackMessage);
+}
+
+bool _isNotFoundResponse(Map<String, dynamic> json) {
+  final status = json['status'];
+  if (status is num && status.toInt() == 0) {
+    return true;
+  }
+  if (status is String && status == '0') {
+    return true;
+  }
+  return json['product'] == null;
 }
 
 FoodItem? _foodItemFromOpenFoodFacts(Map<String, dynamic> json) {

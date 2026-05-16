@@ -41,6 +41,58 @@ void main() {
         throwsA(isA<FoodSearchException>()),
       );
     });
+
+    test('maps barcode product responses to FoodItem objects', () async {
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((request) async {
+          expect(request.headers['user-agent'], OpenFoodFactsClient.userAgent);
+          expect(request.url.path, '/api/v2/product/737628064502');
+          expect(
+            request.url.queryParameters['fields'],
+            'code,product_name,brands,nutriments,image_front_url,image_url',
+          );
+
+          return http.Response(_barcodeResponse, 200);
+        }),
+      );
+      final repository = OpenFoodFactsFoodSearchRepository(client: client);
+
+      final food = await repository.findFoodByBarcode('737628064502');
+
+      expect(food, isNotNull);
+      expect(food!.id, '737628064502');
+      expect(food.name, 'Black Beans');
+      expect(food.calories, 90);
+      expect(food.proteinGrams, 6);
+      expect(food.imageUrl, 'https://example.com/beans.jpg');
+    });
+
+    test('returns null when barcode product is not found', () async {
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((request) async {
+          return http.Response(_barcodeNotFoundResponse, 200);
+        }),
+      );
+      final repository = OpenFoodFactsFoodSearchRepository(client: client);
+
+      final food = await repository.findFoodByBarcode('missing');
+
+      expect(food, isNull);
+    });
+
+    test('throws when barcode response is malformed', () async {
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((request) async {
+          return http.Response('not-json', 200);
+        }),
+      );
+      final repository = OpenFoodFactsFoodSearchRepository(client: client);
+
+      expect(
+        () => repository.findFoodByBarcode('737628064502'),
+        throwsA(isA<FoodSearchException>()),
+      );
+    });
   });
 }
 
@@ -64,5 +116,30 @@ const _searchResponse = '''
       "nutriments": {}
     }
   ]
+}
+''';
+
+const _barcodeResponse = '''
+{
+  "status": 1,
+  "product": {
+    "code": "737628064502",
+    "product_name": "Black Beans",
+    "image_front_url": "https://example.com/beans.jpg",
+    "nutriments": {
+      "energy-kcal_100g": 90,
+      "proteins_100g": 6,
+      "carbohydrates_100g": 16,
+      "fat_100g": 0.5,
+      "fiber_100g": 5
+    }
+  }
+}
+''';
+
+const _barcodeNotFoundResponse = '''
+{
+  "status": 0,
+  "status_verbose": "product not found"
 }
 ''';

@@ -163,12 +163,12 @@ void main() {
         DailyLogState(entries: entries);
 
     MealEntry _entryOn(DateTime date, String id) => MealEntry(
-          id: id,
-          date: date,
-          mealType: MealType.breakfast,
-          foodItem: _banana,
-          quantity: 1,
-        );
+      id: id,
+      date: date,
+      mealType: MealType.breakfast,
+      foodItem: _banana,
+      quantity: 1,
+    );
 
     test('returns 0 when there are no entries', () {
       expect(_stateWith([]).streakDays(today), 0);
