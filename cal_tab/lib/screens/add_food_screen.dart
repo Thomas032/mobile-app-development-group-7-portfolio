@@ -2,11 +2,16 @@ import 'dart:async';
 
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/food_log_route_args.dart';
+import 'package:cal_tab/providers/ai_api_key_provider.dart';
 import 'package:cal_tab/providers/food_search_provider.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
+import 'package:cal_tab/screens/barcode_scanner_screen.dart';
+import 'package:cal_tab/services/gemini_ai_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddFoodScreen extends ConsumerStatefulWidget {
   const AddFoodScreen({super.key, this.target});
@@ -48,8 +53,8 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                 controller: _searchController,
                 onChanged: _queueSearch,
                 onSubmitted: (_) => _runSearch(force: true),
-                onBarcode: () => _showUnavailable('Barcode scanning'),
-                onSnap2Cal: () => _showUnavailable('Snap2Cal'),
+                onBarcode: () => _handleBarcode(target),
+                onSnap2Cal: () => _handleSnap2Cal(target),
               ),
             ),
             Padding(
@@ -105,10 +110,150 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
     await ref.read(foodSearchControllerProvider.notifier).search(query);
   }
 
-  void _showUnavailable(String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature is not wired up yet.')));
+  Future<void> _handleBarcode(FoodLogTarget target) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final router = GoRouter.of(context);
+
+    final code = await navigator.push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (!mounted || code == null || code.isEmpty) {
+      return;
+    }
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const _ProgressDialog(message: 'Looking up product…'),
+      ),
+    );
+
+    try {
+      final repo = await ref.read(foodSearchRepositoryProvider.future);
+      final item = await repo.fetchByBarcode(code);
+      if (!mounted) return;
+      navigator.pop();
+
+      if (item == null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('No product found for $code.')),
+        );
+        return;
+      }
+
+      router.pushNamed(
+        'food-detail',
+        extra: FoodDetailRouteArgs(foodItem: item, target: target),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text('Barcode lookup failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleSnap2Cal(FoodLogTarget target) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+
+    final apiKey = ref.read(aiApiKeyControllerProvider).value;
+    if (apiKey == null || apiKey.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Add a Gemini API key in Settings to use Snap2Cal.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final XFile? file;
+    try {
+      file = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1280,
+        imageQuality: 80,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Camera unavailable: $e')));
+      return;
+    }
+    if (!mounted || file == null) return;
+
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final navigator = Navigator.of(context);
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) =>
+            const _ProgressDialog(message: 'Analyzing photo with Gemini…'),
+      ),
+    );
+
+    try {
+      final service = GeminiAiService(apiKey: apiKey);
+      final estimate = await service.estimateFoodFromImage(bytes);
+      if (!mounted) return;
+      navigator.pop();
+
+      final item = FoodItem(
+        id: 'snap2cal-${DateTime.now().millisecondsSinceEpoch}',
+        name: estimate.name,
+        calories: estimate.caloriesPer100g,
+        proteinGrams: estimate.proteinPer100g,
+        carbsGrams: estimate.carbsPer100g,
+        fatGrams: estimate.fatPer100g,
+        fiberGrams: estimate.fiberPer100g,
+      );
+
+      router.pushNamed(
+        'food-detail',
+        extra: FoodDetailRouteArgs(foodItem: item, target: target),
+      );
+    } on AiServiceException catch (e) {
+      if (!mounted) return;
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text('Snap2Cal failed: $e')),
+      );
+    }
+  }
+}
+
+class _ProgressDialog extends StatelessWidget {
+  const _ProgressDialog({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      content: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Text(message)),
+        ],
+      ),
+    );
   }
 }
 
