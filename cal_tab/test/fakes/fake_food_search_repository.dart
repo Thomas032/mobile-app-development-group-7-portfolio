@@ -5,20 +5,23 @@ import 'package:cal_tab/repositories/food_search_repository.dart';
 class FakeFoodSearchRepository implements FoodSearchRepository {
   FakeFoodSearchRepository({
     this.results = const [],
+    this.barcodeResults = const {},
     this.error,
+    this.barcodeError,
     this.totalCount,
   });
 
   final List<FoodItem> results;
+  final Map<String, FoodItem?> barcodeResults;
   final Object? error;
+  final Object? barcodeError;
   final int? totalCount;
 
   String? lastQuery;
   int? lastPage;
   int? lastPageSize;
   String? lastBarcode;
-  FoodItem? barcodeResult;
-  Object? barcodeError;
+  int barcodeLookupCount = 0;
 
   @override
   Future<FoodSearchPage> searchFoods({
@@ -42,12 +45,13 @@ class FakeFoodSearchRepository implements FoodSearchRepository {
   }
 
   @override
-  Future<FoodItem?> fetchByBarcode(String barcode) async {
+  Future<FoodItem?> findFoodByBarcode(String barcode) async {
     lastBarcode = barcode;
+    barcodeLookupCount += 1;
     final error = barcodeError;
     if (error != null) {
       throw error;
     }
-    return barcodeResult;
+    return barcodeResults[barcode];
   }
 }

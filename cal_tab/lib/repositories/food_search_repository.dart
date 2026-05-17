@@ -9,7 +9,7 @@ abstract class FoodSearchRepository {
     int pageSize = 20,
   });
 
-  Future<FoodItem?> fetchByBarcode(String barcode);
+  Future<FoodItem?> findFoodByBarcode(String barcode);
 }
 
 class OpenFoodFactsFoodSearchRepository implements FoodSearchRepository {
@@ -28,7 +28,7 @@ class OpenFoodFactsFoodSearchRepository implements FoodSearchRepository {
   }
 
   @override
-  Future<FoodItem?> fetchByBarcode(String barcode) {
-    return _client.fetchByBarcode(barcode);
+  Future<FoodItem?> findFoodByBarcode(String barcode) {
+    return _client.getProductByBarcode(barcode);
   }
 }
