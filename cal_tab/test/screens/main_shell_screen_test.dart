@@ -5,19 +5,28 @@ import 'package:cal_tab/models/goal_type.dart';
 import 'package:cal_tab/models/macro_targets.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:cal_tab/screens/main_shell_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../fakes/in_memory_secure_key_value_store.dart';
+
 void main() {
   testWidgets('switches between bottom navigation tabs', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: MainShellScreen(profile: _profile)),
+      ProviderScope(
+        overrides: [
+          secureKeyValueStoreProvider.overrideWithValue(
+            InMemorySecureKeyValueStore(),
+          ),
+        ],
+        child: const MaterialApp(home: MainShellScreen(profile: _profile)),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('CalTab'), findsOneWidget);
 
@@ -32,12 +41,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('ai_tab_button')));
     await tester.pumpAndSettle();
-    expect(
-      find.text(
-        "The assistant will use your local profile and today's intake after you add your own API key.",
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Bring your own Gemini key'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('settings_tab_button')));
     await tester.pumpAndSettle();
@@ -52,6 +56,11 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          secureKeyValueStoreProvider.overrideWithValue(
+            InMemorySecureKeyValueStore(),
+          ),
+        ],
         child: MaterialApp.router(
           routerConfig: GoRouter(
             routes: [

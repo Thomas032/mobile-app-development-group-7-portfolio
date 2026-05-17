@@ -12,12 +12,14 @@ import 'package:cal_tab/providers/app_startup_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
+import 'package:cal_tab/repositories/ai_api_key_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_app_settings_repository.dart';
 import '../fakes/fake_meal_log_repository.dart';
 import '../fakes/fake_user_profile_repository.dart';
+import '../fakes/in_memory_secure_key_value_store.dart';
 
 void main() {
   test('hydrates settings, profile, and meal entries on startup', () async {
@@ -33,6 +35,9 @@ void main() {
         ),
         mealLogRepositoryProvider.overrideWith(
           (ref) async => FakeMealLogRepository(initialEntries: [_entry]),
+        ),
+        aiApiKeyRepositoryProvider.overrideWithValue(
+          SecureAiApiKeyRepository(store: InMemorySecureKeyValueStore()),
         ),
       ],
     );

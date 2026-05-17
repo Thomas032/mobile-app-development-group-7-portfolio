@@ -23,13 +23,6 @@ class AppSettingsController extends Notifier<AppSettings> {
     await saveCurrentSettings();
   }
 
-  Future<void> updateAiApiKey(String? apiKey) async {
-    state = apiKey == null || apiKey.isEmpty
-        ? state.copyWith(clearAiApiKey: true)
-        : state.copyWith(aiApiKey: apiKey);
-    await saveCurrentSettings();
-  }
-
   Future<void> clearSavedSettings() async {
     final repository = await ref.read(appSettingsRepositoryProvider.future);
     await repository.clearSettings();

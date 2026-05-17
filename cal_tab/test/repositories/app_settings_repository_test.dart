@@ -14,23 +14,18 @@ void main() {
       final settings = await repository.loadSettings();
 
       expect(settings.themeMode, AppThemeMode.system);
-      expect(settings.aiApiKey, isNull);
     });
 
     test('saves and loads settings', () async {
       final repository = LocalAppSettingsRepository(
         store: InMemoryKeyValueStore(),
       );
-      const settings = AppSettings(
-        themeMode: AppThemeMode.dark,
-        aiApiKey: 'test-key',
-      );
+      const settings = AppSettings(themeMode: AppThemeMode.dark);
 
       await repository.saveSettings(settings);
       final loadedSettings = await repository.loadSettings();
 
       expect(loadedSettings.themeMode, AppThemeMode.dark);
-      expect(loadedSettings.aiApiKey, 'test-key');
     });
 
     test('clears saved settings', () async {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_user_profile_repository.dart';
+import '../fakes/in_memory_secure_key_value_store.dart';
 
 void main() {
   testWidgets('completes onboarding and saves the profile', (tester) async {
@@ -16,6 +17,9 @@ void main() {
         overrides: [
           userProfileRepositoryProvider.overrideWith(
             (ref) async => profileRepository,
+          ),
+          secureKeyValueStoreProvider.overrideWithValue(
+            InMemorySecureKeyValueStore(),
           ),
         ],
         child: const MaterialApp(home: AppRootScreen()),
