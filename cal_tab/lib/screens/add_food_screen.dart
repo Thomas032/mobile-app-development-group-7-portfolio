@@ -6,7 +6,6 @@ import 'package:cal_tab/providers/ai_api_key_provider.dart';
 import 'package:cal_tab/providers/food_search_provider.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
-import 'package:cal_tab/screens/barcode_scanner_screen.dart';
 import 'package:cal_tab/services/gemini_ai_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,7 +54,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                 onSubmitted: (_) => _runSearch(force: true),
                 onBarcode: () =>
                     context.pushNamed('scan-barcode', extra: target),
-                onSnap2Cal: () => _showUnavailable('Snap2Cal'),
+                onSnap2Cal: () => _handleSnap2Cal(target),
               ),
             ),
             Padding(
@@ -117,7 +116,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
     final router = GoRouter.of(context);
 
     final code = await navigator.push<String>(
-      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+      MaterialPageRoute(builder: (_) => const SizedBox.shrink()),
     );
     if (!mounted || code == null || code.isEmpty) {
       return;
@@ -133,7 +132,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
 
     try {
       final repo = await ref.read(foodSearchRepositoryProvider.future);
-      final item = await repo.fetchByBarcode(code);
+      final item = await repo.findFoodByBarcode(code);
       if (!mounted) return;
       navigator.pop();
 
