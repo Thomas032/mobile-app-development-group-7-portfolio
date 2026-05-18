@@ -7,10 +7,14 @@ import 'package:cal_tab/models/profile_setup_input.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/ai_api_key_provider.dart';
 import 'package:cal_tab/providers/app_settings_provider.dart';
+import 'package:cal_tab/providers/backup_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
+import 'package:cal_tab/services/backup_service.dart';
 import 'package:cal_tab/widgets/app_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -475,6 +479,8 @@ class _DataSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final backupState = ref.watch(backupControllerProvider);
+
     return _SectionCard(
       title: 'Data',
       icon: Icons.storage_outlined,
@@ -498,8 +504,231 @@ class _DataSection extends ConsumerWidget {
             icon: const Icon(Icons.delete_outline),
             label: const Text('Clear food logs'),
           ),
+          const SizedBox(height: 16),
+          // Backup/Export section
+          FilledButton.icon(
+            key: const Key('export_backup_button'),
+            onPressed: backupState == BackupState.loading
+                ? null
+                : () => _showExportDialog(context, ref),
+            icon: backupState == BackupState.loading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_outlined),
+            label: const Text('Export backup'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const Key('import_backup_button'),
+            onPressed: backupState == BackupState.loading
+                ? null
+                : () => _showImportDialog(context, ref),
+            icon: const Icon(Icons.upload_outlined),
+            label: const Text('Import backup'),
+          ),
         ],
       ),
+    );
+  }
+
+  void _showExportDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => _ExportBackupDialog(parentRef: ref),
+    );
+  }
+
+  void _showImportDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => _ImportBackupDialog(parentRef: ref),
+    );
+  }
+}
+
+class _ExportBackupDialog extends ConsumerWidget {
+  const _ExportBackupDialog({required this.parentRef});
+
+  final WidgetRef parentRef;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AlertDialog(
+      title: const Text('Export Backup'),
+      content: const Text(
+        'This will download your backup file. You can later import it to restore all your data.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            Navigator.of(context).pop();
+            final backupJson = await parentRef
+                .read(backupControllerProvider.notifier)
+                .exportData();
+            if (backupJson == null) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed to export backup')),
+              );
+              return;
+            }
+
+            if (!context.mounted) return;
+            await _downloadBackupFile(context, backupJson);
+          },
+          child: const Text('Export'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Download backup file
+Future<void> _downloadBackupFile(
+  BuildContext context,
+  String backupJson,
+) async {
+  try {
+    final fileName = BackupService.getBackupFileName();
+
+    // For all platforms, copy to clipboard and show where to save
+    // On web: User can manually download from browser, or copy and paste into file
+    // On mobile: User copies and can paste into any text file manager
+    await Clipboard.setData(ClipboardData(text: backupJson));
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Backup copied to clipboard!'),
+                  Text(
+                    'Save as: $fileName',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'VIEW',
+          onPressed: () {
+            // Could show the JSON in a dialog here
+          },
+        ),
+      ),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+  }
+}
+
+class _ImportBackupDialog extends StatefulWidget {
+  const _ImportBackupDialog({required this.parentRef});
+
+  final WidgetRef parentRef;
+
+  @override
+  State<_ImportBackupDialog> createState() => _ImportBackupDialogState();
+}
+
+class _ImportBackupDialogState extends State<_ImportBackupDialog> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Import Backup'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Paste your backup JSON data here:'),
+            const SizedBox(height: 12),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                minLines: 5,
+                maxLines: 10,
+                expands: false,
+                decoration: const InputDecoration(
+                  labelText: 'Paste backup JSON',
+                  hintText: 'Paste the backup file content...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final backupJson = _controller.text.trim();
+            if (backupJson.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please paste backup data')),
+              );
+              return;
+            }
+
+            final success = await widget.parentRef
+                .read(backupControllerProvider.notifier)
+                .importData(backupJson);
+
+            if (!mounted) return;
+            Navigator.of(context).pop();
+
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Backup imported successfully!')),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed to import backup')),
+              );
+            }
+          },
+          child: const Text('Import'),
+        ),
+      ],
     );
   }
 }
