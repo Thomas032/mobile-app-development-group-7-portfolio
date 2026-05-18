@@ -164,9 +164,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
     if (apiKey == null || apiKey.isEmpty) {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text(
-            'Add a Gemini API key in Settings to use Snap2Cal.',
-          ),
+          content: Text('Add a Gemini API key in Settings to use Snap2Cal.'),
         ),
       );
       return;
@@ -227,9 +225,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
     } catch (e) {
       if (!mounted) return;
       navigator.pop();
-      messenger.showSnackBar(
-        SnackBar(content: Text('Snap2Cal failed: $e')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('Snap2Cal failed: $e')));
     }
   }
 }

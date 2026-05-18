@@ -72,8 +72,7 @@ class GeminiAiService {
   }) async* {
     final model = _modelWith(systemInstruction: Content.text(systemContext));
     final contents = <Content>[
-      for (final turn in history)
-        Content(turn.role, [TextPart(turn.content)]),
+      for (final turn in history) Content(turn.role, [TextPart(turn.content)]),
       Content.text(userMessage),
     ];
 
@@ -117,9 +116,7 @@ SnapEstimate parseSnapEstimate(String raw) {
   try {
     final decoded = jsonDecode(stripped);
     if (decoded is! Map<String, dynamic>) {
-      throw const AiServiceException(
-        'Gemini response was not a JSON object.',
-      );
+      throw const AiServiceException('Gemini response was not a JSON object.');
     }
     json = decoded;
   } on FormatException catch (e) {

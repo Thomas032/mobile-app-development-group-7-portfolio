@@ -88,13 +88,24 @@ class OpenFoodFactsClient {
   }
 
   Future<FoodItem?> getProductByBarcode(String barcode) async {
+    return _lookupProductByBarcode(barcode: barcode, pathSuffix: '');
+  }
+
+  Future<FoodItem?> fetchByBarcode(String barcode) async {
+    return _lookupProductByBarcode(barcode: barcode, pathSuffix: '.json');
+  }
+
+  Future<FoodItem?> _lookupProductByBarcode({
+    required String barcode,
+    required String pathSuffix,
+  }) async {
     final trimmedBarcode = barcode.trim();
     if (trimmedBarcode.isEmpty) {
       return null;
     }
 
     final uri = baseUri.replace(
-      path: '/api/v2/product/$trimmedBarcode',
+      path: '/api/v2/product/$trimmedBarcode$pathSuffix',
       queryParameters: const {
         'fields':
             'code,product_name,brands,nutriments,image_front_url,image_url',
@@ -108,6 +119,10 @@ class OpenFoodFactsClient {
         HttpHeaders.userAgentHeader: userAgent,
       },
     );
+
+    if (response.statusCode == 404) {
+      return null;
+    }
 
     if (response.statusCode != 200) {
       throw FoodSearchException(

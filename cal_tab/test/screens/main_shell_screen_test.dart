@@ -32,12 +32,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('stats_tab_button')));
     await tester.pumpAndSettle();
-    expect(
-      find.text(
-        'Daily history, weekly trends, macro progress, and meal consistency will appear here.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Daily calories'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('ai_tab_button')));
     await tester.pumpAndSettle();

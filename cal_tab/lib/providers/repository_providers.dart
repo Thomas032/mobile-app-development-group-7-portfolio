@@ -53,7 +53,9 @@ final secureKeyValueStoreProvider = Provider<SecureKeyValueStore>((ref) {
 });
 
 final aiApiKeyRepositoryProvider = Provider<AiApiKeyRepository>((ref) {
-  return SecureAiApiKeyRepository(store: ref.watch(secureKeyValueStoreProvider));
+  return SecureAiApiKeyRepository(
+    store: ref.watch(secureKeyValueStoreProvider),
+  );
 });
 
 final foodSearchRepositoryProvider = FutureProvider<FoodSearchRepository>((

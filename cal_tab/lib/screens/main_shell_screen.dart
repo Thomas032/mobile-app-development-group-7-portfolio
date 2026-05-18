@@ -27,7 +27,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     final selectedDate = ref.watch(selectedLogDateProvider);
     final destinations = [
       HomeScreen(profile: widget.profile),
-      const StatsScreen(),
+      StatsScreen(profile: widget.profile),
       const AiScreen(),
       const SettingsScreen(),
     ];

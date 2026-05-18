@@ -173,9 +173,7 @@ class _ApiKeySectionState extends ConsumerState<_ApiKeySection> {
               labelText: 'Gemini API key',
               suffixIcon: IconButton(
                 tooltip: _obscure ? 'Show' : 'Hide',
-                icon: Icon(
-                  _obscure ? Icons.visibility : Icons.visibility_off,
-                ),
+                icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
@@ -214,9 +212,7 @@ class _ApiKeySectionState extends ConsumerState<_ApiKeySection> {
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
-    await ref
-        .read(aiApiKeyControllerProvider.notifier)
-        .save(_controller.text);
+    await ref.read(aiApiKeyControllerProvider.notifier).save(_controller.text);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(content: Text('API key saved.')));
   }

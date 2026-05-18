@@ -47,11 +47,9 @@ class _AiScreenState extends ConsumerState<AiScreen> {
             inputController: _inputController,
             scrollController: _scrollController,
             onSend: _send,
-            onClear: () =>
-                ref.read(aiChatControllerProvider.notifier).clear(),
-            onDismissError: () => ref
-                .read(aiChatControllerProvider.notifier)
-                .dismissError(),
+            onClear: () => ref.read(aiChatControllerProvider.notifier).clear(),
+            onDismissError: () =>
+                ref.read(aiChatControllerProvider.notifier).dismissError(),
           );
         },
       ),
@@ -222,10 +220,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 )
               else if (isUser)
-                Text(
-                  message.content,
-                  style: TextStyle(color: fg, height: 1.35),
-                )
+                Text(message.content, style: TextStyle(color: fg, height: 1.35))
               else
                 MarkdownBody(
                   data: message.content,
@@ -238,10 +233,7 @@ class _MessageBubble extends StatelessWidget {
                           color: fg,
                           fontWeight: FontWeight.bold,
                         ),
-                        em: TextStyle(
-                          color: fg,
-                          fontStyle: FontStyle.italic,
-                        ),
+                        em: TextStyle(color: fg, fontStyle: FontStyle.italic),
                         code: TextStyle(
                           color: fg,
                           backgroundColor: colors.surfaceContainerHighest,
@@ -385,10 +377,7 @@ class _SuggestedPrompt extends StatelessWidget {
         children: [
           Icon(Icons.chevron_right, size: 18, color: colors.onSurfaceVariant),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: colors.onSurfaceVariant),
-            ),
+            child: Text(text, style: TextStyle(color: colors.onSurfaceVariant)),
           ),
         ],
       ),
