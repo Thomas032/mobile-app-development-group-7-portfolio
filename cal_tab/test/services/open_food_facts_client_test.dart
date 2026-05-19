@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cal_tab/services/open_food_facts_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -88,6 +90,90 @@ void main() {
       );
 
       expect(await client.fetchByBarcode('  '), isNull);
+    });
+  });
+
+  group('OpenFoodFactsClient.searchProducts retry behaviour', () {
+    test('retries once on 500 and returns the second response', () async {
+      var calls = 0;
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          calls += 1;
+          if (calls == 1) {
+            return http.Response('boom', 500);
+          }
+          return http.Response(
+            jsonEncode({'products': <Map<String, dynamic>>[], 'count': 0}),
+            200,
+          );
+        }),
+        retryDelay: Duration.zero,
+      );
+
+      final result = await client.searchProducts(query: 'bread');
+
+      expect(calls, 2);
+      expect(result.items, isEmpty);
+    });
+
+    test('retries once on SocketException', () async {
+      var calls = 0;
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          calls += 1;
+          if (calls == 1) {
+            throw const SocketException('dropped');
+          }
+          return http.Response(
+            jsonEncode({'products': <Map<String, dynamic>>[], 'count': 0}),
+            200,
+          );
+        }),
+        retryDelay: Duration.zero,
+      );
+
+      final result = await client.searchProducts(query: 'bread');
+
+      expect(calls, 2);
+      expect(result.items, isEmpty);
+    });
+
+    test('retries once on TimeoutException', () async {
+      var calls = 0;
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          calls += 1;
+          if (calls == 1) {
+            throw TimeoutException('slow');
+          }
+          return http.Response(
+            jsonEncode({'products': <Map<String, dynamic>>[], 'count': 0}),
+            200,
+          );
+        }),
+        retryDelay: Duration.zero,
+      );
+
+      await client.searchProducts(query: 'bread');
+
+      expect(calls, 2);
+    });
+
+    test('throws when both attempts fail with 500', () async {
+      var calls = 0;
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          calls += 1;
+          return http.Response('boom', 500);
+        }),
+        retryDelay: Duration.zero,
+      );
+
+      await expectLater(
+        client.searchProducts(query: 'bread'),
+        throwsA(isA<FoodSearchException>()),
+      );
+      expect(calls, 2);
     });
   });
 }

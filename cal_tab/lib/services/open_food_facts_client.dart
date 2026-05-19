@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,12 +16,20 @@ class FoodSearchException implements Exception {
 }
 
 class OpenFoodFactsClient {
-  OpenFoodFactsClient({required http.Client httpClient, Uri? baseUri})
-    : baseUri = baseUri ?? Uri.https('world.openfoodfacts.org'),
-      _httpClient = httpClient;
+  OpenFoodFactsClient({
+    required http.Client httpClient,
+    Uri? baseUri,
+    Duration requestTimeout = const Duration(seconds: 10),
+    Duration retryDelay = const Duration(milliseconds: 400),
+  }) : baseUri = baseUri ?? Uri.https('world.openfoodfacts.org'),
+       _httpClient = httpClient,
+       _requestTimeout = requestTimeout,
+       _retryDelay = retryDelay;
 
   final http.Client _httpClient;
   final Uri baseUri;
+  final Duration _requestTimeout;
+  final Duration _retryDelay;
 
   static const String userAgent =
       'CalTab/1.0 (student-project; contact: unavailable)';
@@ -49,13 +58,7 @@ class OpenFoodFactsClient {
       queryParameters: queryParameters,
     );
 
-    final response = await _httpClient.get(
-      uri,
-      headers: const {
-        HttpHeaders.acceptHeader: 'application/json',
-        HttpHeaders.userAgentHeader: userAgent,
-      },
-    );
+    final response = await _getWithRetry(uri);
 
     if (response.statusCode != 200) {
       throw FoodSearchException(
@@ -112,13 +115,7 @@ class OpenFoodFactsClient {
       },
     );
 
-    final response = await _httpClient.get(
-      uri,
-      headers: const {
-        HttpHeaders.acceptHeader: 'application/json',
-        HttpHeaders.userAgentHeader: userAgent,
-      },
-    );
+    final response = await _getWithRetry(uri);
 
     if (response.statusCode == 404) {
       return null;
@@ -145,6 +142,42 @@ class OpenFoodFactsClient {
 
     return _foodItemFromOpenFoodFacts(product);
   }
+
+  /// Performs a GET with one automatic retry on transient failures
+  /// (5xx, socket errors, timeouts). Open Food Facts' public endpoints
+  /// occasionally drop requests on common search terms, so a single retry
+  /// after a short delay smooths over the bumps without hiding real errors.
+  Future<http.Response> _getWithRetry(Uri uri) async {
+    const headers = {
+      HttpHeaders.acceptHeader: 'application/json',
+      HttpHeaders.userAgentHeader: userAgent,
+    };
+
+    Future<http.Response> attempt() =>
+        _httpClient.get(uri, headers: headers).timeout(_requestTimeout);
+
+    try {
+      final response = await attempt();
+      if (_isTransientStatus(response.statusCode)) {
+        await Future<void>.delayed(_retryDelay);
+        return attempt();
+      }
+      return response;
+    } on SocketException {
+      await Future<void>.delayed(_retryDelay);
+      return attempt();
+    } on TimeoutException {
+      await Future<void>.delayed(_retryDelay);
+      return attempt();
+    } on http.ClientException {
+      await Future<void>.delayed(_retryDelay);
+      return attempt();
+    }
+  }
+}
+
+bool _isTransientStatus(int statusCode) {
+  return statusCode >= 500 && statusCode <= 599;
 }
 
 Map<String, dynamic> _decodeObject(
