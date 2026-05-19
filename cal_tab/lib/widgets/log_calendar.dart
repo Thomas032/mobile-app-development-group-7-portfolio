@@ -19,52 +19,54 @@ class LogCalendar extends StatefulWidget {
   final DateTime today;
   final ValueChanged<DateTime> onDateSelected;
 
-  static const _rangeBeforeToday = 14;
-  static const _rangeAfterToday = 14;
-  static const _dayExtent = 58.0;
+  /// Large symmetric range; the PageView is virtually infinite for the
+  /// purposes of this app — the user won't realistically swipe past it.
+  static const int _initialPage = 5000;
 
   @override
   State<LogCalendar> createState() => _LogCalendarState();
 }
 
 class _LogCalendarState extends State<LogCalendar> {
-  late final ScrollController _scrollController;
-  late DateTime _anchorDate;
+  late final PageController _pageController;
+  late DateTime _anchorMonday;
 
   @override
   void initState() {
     super.initState();
-    final selectedDate = normalizeLogDate(widget.selectedDate);
-    final today = normalizeLogDate(widget.today);
-    _anchorDate = _isDateInRangeForAnchor(selectedDate, today)
-        ? today
-        : selectedDate;
-    _scrollController = ScrollController(
-      initialScrollOffset: _offsetForDate(selectedDate),
-    );
+    _anchorMonday = _startOfWeek(widget.selectedDate);
+    _pageController = PageController(initialPage: LogCalendar._initialPage);
   }
 
   @override
   void didUpdateWidget(covariant LogCalendar oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    final selectedDate = normalizeLogDate(widget.selectedDate);
-    if (!_isDateInRenderedRange(selectedDate)) {
-      _anchorDate = selectedDate;
-    }
-
     if (!_isSameDay(oldWidget.selectedDate, widget.selectedDate)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _scrollToSelectedDate();
-        }
-      });
+      final newMonday = _startOfWeek(widget.selectedDate);
+      if (!_isSameDay(newMonday, _anchorMonday)) {
+        final weekDelta = _weekDelta(_anchorMonday, newMonday);
+        final targetPage = LogCalendar._initialPage + weekDelta;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_pageController.hasClients) return;
+          final current = _pageController.page?.round() ??
+              LogCalendar._initialPage;
+          if ((current - targetPage).abs() <= 1) {
+            _pageController.animateToPage(
+              targetPage,
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+            );
+          } else {
+            _pageController.jumpToPage(targetPage);
+          }
+        });
+      }
     }
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -72,76 +74,74 @@ class _LogCalendarState extends State<LogCalendar> {
   Widget build(BuildContext context) {
     final todayNorm = normalizeLogDate(widget.today);
     final selectedNorm = normalizeLogDate(widget.selectedDate);
-    final days = List.generate(
-      LogCalendar._rangeBeforeToday + LogCalendar._rangeAfterToday + 1,
-      (i) => _anchorDate.add(Duration(days: i - LogCalendar._rangeBeforeToday)),
-    );
 
     return SizedBox(
       height: 82,
-      child: ListView.builder(
-        key: const Key('home_calendar_list'),
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemExtent: LogCalendar._dayExtent,
-        itemCount: days.length,
-        itemBuilder: (context, index) {
-          final day = days[index];
-          final status = _CalendarDayStatus.from(
-            day: day,
+      child: PageView.builder(
+        key: const Key('home_calendar_pager'),
+        controller: _pageController,
+        itemBuilder: (context, pageIndex) {
+          final weekDelta = pageIndex - LogCalendar._initialPage;
+          final weekStart = _anchorMonday.add(Duration(days: weekDelta * 7));
+          return _WeekStrip(
+            weekStart: weekStart,
             today: todayNorm,
+            selectedDate: selectedNorm,
             logState: widget.logState,
             profile: widget.profile,
-          );
-
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: _CalendarDayChip(
-              date: day,
-              status: status,
-              isSelected: _isSameDay(day, selectedNorm),
-              onTap: () => widget.onDateSelected(day),
-            ),
+            onDateSelected: widget.onDateSelected,
           );
         },
       ),
     );
   }
+}
 
-  bool _isDateInRenderedRange(DateTime date) {
-    return _isDateInRangeForAnchor(date, _anchorDate);
-  }
+class _WeekStrip extends StatelessWidget {
+  const _WeekStrip({
+    required this.weekStart,
+    required this.today,
+    required this.selectedDate,
+    required this.logState,
+    required this.profile,
+    required this.onDateSelected,
+  });
 
-  bool _isDateInRangeForAnchor(DateTime date, DateTime anchor) {
-    final dayOffset = _dayDelta(anchor, date);
-    return dayOffset >= -LogCalendar._rangeBeforeToday &&
-        dayOffset <= LogCalendar._rangeAfterToday;
-  }
+  final DateTime weekStart;
+  final DateTime today;
+  final DateTime selectedDate;
+  final DailyLogState logState;
+  final UserProfile profile;
+  final ValueChanged<DateTime> onDateSelected;
 
-  double _offsetForDate(DateTime date) {
-    const leadingVisibleDays = 2;
-    final firstRenderedDate = _anchorDate.subtract(
-      const Duration(days: LogCalendar._rangeBeforeToday),
-    );
-    final index = _dayDelta(firstRenderedDate, date);
-    final rawOffset = (index - leadingVisibleDays) * LogCalendar._dayExtent;
-    return rawOffset < 0 ? 0 : rawOffset;
-  }
+  @override
+  Widget build(BuildContext context) {
+    final days = List.generate(7, (i) => weekStart.add(Duration(days: i)));
 
-  void _scrollToSelectedDate() {
-    if (!_scrollController.hasClients) {
-      return;
-    }
-
-    final maxOffset = _scrollController.position.maxScrollExtent;
-    final targetOffset = _offsetForDate(
-      widget.selectedDate,
-    ).clamp(0.0, maxOffset).toDouble();
-    _scrollController.animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          for (final day in days)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: _CalendarDayChip(
+                  date: day,
+                  status: _CalendarDayStatus.from(
+                    day: day,
+                    today: today,
+                    logState: logState,
+                    profile: profile,
+                  ),
+                  isSelected: _isSameDay(day, selectedDate),
+                  isToday: _isSameDay(day, today),
+                  onTap: () => onDateSelected(day),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -197,12 +197,14 @@ class _CalendarDayChip extends StatelessWidget {
     required this.date,
     required this.status,
     required this.isSelected,
+    required this.isToday,
     required this.onTap,
   });
 
   final DateTime date;
   final _CalendarDayStatus status;
   final bool isSelected;
+  final bool isToday;
   final VoidCallback onTap;
 
   static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -222,7 +224,6 @@ class _CalendarDayChip extends StatelessWidget {
         onTap: onTap,
         child: Ink(
           key: Key('calendar_day_status_${logDateKey(date)}'),
-          width: 50,
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(16),
@@ -249,6 +250,15 @@ class _CalendarDayChip extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
+              const SizedBox(height: 3),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isToday ? fgColor : Colors.transparent,
+                ),
+              ),
             ],
           ),
         ),
@@ -257,12 +267,17 @@ class _CalendarDayChip extends StatelessWidget {
   }
 }
 
-bool _isSameDay(DateTime a, DateTime b) {
-  return a.year == b.year && a.month == b.month && a.day == b.day;
+DateTime _startOfWeek(DateTime date) {
+  final normalized = normalizeLogDate(date);
+  return normalized.subtract(Duration(days: normalized.weekday - 1));
 }
 
-int _dayDelta(DateTime start, DateTime end) {
-  final startUtc = DateTime.utc(start.year, start.month, start.day);
-  final endUtc = DateTime.utc(end.year, end.month, end.day);
-  return endUtc.difference(startUtc).inDays;
+int _weekDelta(DateTime fromMonday, DateTime toMonday) {
+  final from = DateTime.utc(fromMonday.year, fromMonday.month, fromMonday.day);
+  final to = DateTime.utc(toMonday.year, toMonday.month, toMonday.day);
+  return to.difference(from).inDays ~/ 7;
+}
+
+bool _isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }

@@ -100,16 +100,14 @@ void main() {
     expect(find.text('321'), findsOneWidget);
   });
 
-  testWidgets('renders at least two ListViews (calendar + main scroll)', (
+  testWidgets('renders the calendar pager and the main scroll list', (
     tester,
   ) async {
     await tester.pumpWidget(buildScreen());
     await tester.pump();
 
-    expect(
-      tester.widgetList<ListView>(find.byType(ListView)).length,
-      greaterThanOrEqualTo(2),
-    );
+    expect(find.byKey(const Key('home_calendar_pager')), findsOneWidget);
+    expect(find.byType(ListView), findsWidgets);
   });
 
   testWidgets('shows 0 consumed calories and 0% when no food is logged', (
@@ -150,21 +148,25 @@ void main() {
   });
 
   testWidgets('calendar colors days by calorie goal status', (tester) async {
-    final yesterday = _today().subtract(const Duration(days: 1));
-    final twoDaysAgo = _today().subtract(const Duration(days: 2));
+    // Pick two reference dates that are guaranteed to live inside the
+    // currently-displayed week (Mon–Sun containing today), regardless of
+    // which weekday the test happens to run on.
+    final today = _today();
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    final tuesday = monday.add(const Duration(days: 1));
 
     await tester.pumpWidget(
       buildScreen(
         entries: [
-          _entryFor(date: yesterday, calories: 105),
-          _entryFor(date: twoDaysAgo, calories: _profile.calorieGoal),
+          _entryFor(date: tuesday, calories: 105),
+          _entryFor(date: monday, calories: _profile.calorieGoal),
         ],
       ),
     );
     await tester.pump();
 
-    expect(_calendarDayColor(tester, twoDaysAgo), const Color(0xFF34C759));
-    expect(_calendarDayColor(tester, yesterday), const Color(0xFFFF9500));
+    expect(_calendarDayColor(tester, monday), const Color(0xFF34C759));
+    expect(_calendarDayColor(tester, tuesday), const Color(0xFFFF9500));
   });
 
   testWidgets('horizontal calendar recenters around selected jump date', (
