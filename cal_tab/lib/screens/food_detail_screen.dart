@@ -6,6 +6,7 @@ import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/meal_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -190,7 +191,10 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                   const SizedBox(height: 12),
                   _buildNutritionPreview(food),
                   const SizedBox(height: 16),
-                  _MealTargetRow(mealType: _mealType),
+                  _MealTargetRow(
+                    mealType: _mealType,
+                    onChanged: _pickMeal,
+                  ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     key: const Key('add_search_food_button'),
@@ -262,6 +266,18 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _pickMeal() async {
+    final next = await showMealPickerSheet(
+      context,
+      selected: _mealType,
+      title: 'Change meal',
+    );
+    if (next == null || !mounted || next == _mealType) {
+      return;
+    }
+    setState(() => _mealType = next);
   }
 
   Future<void> _deleteEntry() async {
@@ -413,58 +429,57 @@ class _NutrientRow extends StatelessWidget {
 }
 
 class _MealTargetRow extends StatelessWidget {
-  const _MealTargetRow({required this.mealType});
+  const _MealTargetRow({required this.mealType, required this.onChanged});
 
   final MealType mealType;
+  final Future<void> Function() onChanged;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      key: const Key('detail_meal_target'),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
+    return Material(
+      color: colors.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        key: const Key('detail_meal_target'),
         borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.restaurant_menu_rounded, color: colors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Meal',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
+        onTap: onChanged,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.restaurant_menu_rounded, color: colors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Meal',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      mealTypeLabel(mealType),
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  _mealTargetLabel(mealType),
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.edit_outlined,
+                color: colors.onSurfaceVariant,
+                size: 18,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
-}
-
-String _mealTargetLabel(MealType mealType) {
-  return switch (mealType) {
-    MealType.breakfast => 'Breakfast',
-    MealType.snackMorning => 'Morning snack',
-    MealType.lunch => 'Lunch',
-    MealType.snackAfternoon => 'Afternoon snack',
-    MealType.dinner => 'Dinner',
-    MealType.secondDinner => 'Second dinner',
-  };
 }
