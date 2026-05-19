@@ -1,4 +1,5 @@
 import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 
 DateTime normalizeLogDate(DateTime date) {
@@ -25,8 +26,16 @@ class FoodLogTarget {
 }
 
 class FoodDetailRouteArgs {
-  const FoodDetailRouteArgs({required this.foodItem, required this.target});
+  const FoodDetailRouteArgs({
+    required this.foodItem,
+    required this.target,
+    this.editingEntry,
+  });
 
   final FoodItem? foodItem;
   final FoodLogTarget target;
+
+  /// When non-null the detail screen opens in edit mode, prefilled from this
+  /// entry and saving will update the existing entry instead of creating one.
+  final MealEntry? editingEntry;
 }

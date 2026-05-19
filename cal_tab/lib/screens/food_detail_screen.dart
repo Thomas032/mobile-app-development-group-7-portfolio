@@ -1,5 +1,6 @@
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/food_log_route_args.dart';
+import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
@@ -11,35 +12,60 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum _InputMode { grams, portions }
 
 class FoodDetailScreen extends ConsumerStatefulWidget {
-  const FoodDetailScreen({super.key, required this.foodItem, this.target});
+  const FoodDetailScreen({
+    super.key,
+    required this.foodItem,
+    this.target,
+    this.editingEntry,
+  });
 
   final FoodItem? foodItem;
   final FoodLogTarget? target;
+  final MealEntry? editingEntry;
+
+  bool get isEditing => editingEntry != null;
 
   @override
   ConsumerState<FoodDetailScreen> createState() => _FoodDetailScreenState();
 }
 
 class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
-  final _quantityController = TextEditingController(text: '100');
+  late final TextEditingController _quantityController;
 
   late MealType _mealType;
   late FoodLogTarget _target;
-  _InputMode _inputMode = _InputMode.grams;
+  late _InputMode _inputMode;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    final editing = widget.editingEntry;
+
     _target =
         (widget.target ??
-                FoodLogTarget(date: ref.read(selectedLogDateProvider)))
+                FoodLogTarget(
+                  date: editing?.date ?? ref.read(selectedLogDateProvider),
+                  mealType: editing?.mealType,
+                ))
             .normalized();
-    _mealType =
-        _target.mealType ??
-        ref
-            .read(mealAssignmentServiceProvider)
-            .assignFor(_entryDate(DateTime.now()));
+
+    if (editing != null) {
+      _mealType = editing.mealType;
+      _inputMode = _InputMode.grams;
+      _quantityController = TextEditingController(
+        text: (editing.quantity * 100).toStringAsFixed(0),
+      );
+    } else {
+      _inputMode = _InputMode.grams;
+      _quantityController = TextEditingController(text: '100');
+      _mealType =
+          _target.mealType ??
+          ref
+              .read(mealAssignmentServiceProvider)
+              .assignFor(_entryDate(DateTime.now()));
+    }
+
     _quantityController.addListener(_onAmountChanged);
   }
 
@@ -168,9 +194,11 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     key: const Key('add_search_food_button'),
-                    onPressed: _isSaving ? null : () => _addFood(food),
-                    icon: const Icon(Icons.check),
-                    label: const Text('Add to day'),
+                    onPressed: _isSaving ? null : () => _submit(food),
+                    icon: Icon(
+                      widget.isEditing ? Icons.save_outlined : Icons.check,
+                    ),
+                    label: Text(widget.isEditing ? 'Update' : 'Add to day'),
                   ),
                 ],
               ),
@@ -221,7 +249,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
     );
   }
 
-  Future<void> _addFood(FoodItem food) async {
+  Future<void> _submit(FoodItem food) async {
     final raw = double.tryParse(_quantityController.text);
     if (raw == null || raw <= 0) {
       return;
@@ -233,15 +261,24 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
 
     setState(() => _isSaving = true);
 
-    final now = DateTime.now();
     final controller = ref.read(dailyLogControllerProvider.notifier);
-    controller.logFood(
-      entryId: 'entry-${now.microsecondsSinceEpoch}',
-      foodItem: food,
-      date: _entryDate(now),
-      quantity: quantity,
-      mealType: _mealType,
-    );
+    final editing = widget.editingEntry;
+    if (editing != null) {
+      controller.updateEntry(
+        entryId: editing.id,
+        quantity: quantity,
+        mealType: _mealType,
+      );
+    } else {
+      final now = DateTime.now();
+      controller.logFood(
+        entryId: 'entry-${now.microsecondsSinceEpoch}',
+        foodItem: food,
+        date: _entryDate(now),
+        quantity: quantity,
+        mealType: _mealType,
+      );
+    }
     await controller.saveCurrentEntries();
 
     if (mounted) {

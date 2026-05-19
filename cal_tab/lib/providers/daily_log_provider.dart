@@ -97,6 +97,31 @@ class DailyLogController extends Notifier<DailyLogState> {
     clear();
   }
 
+  /// Updates the quantity and/or meal type of an existing entry. Silently
+  /// ignored when no entry with [entryId] exists.
+  void updateEntry({
+    required String entryId,
+    required double quantity,
+    required MealType mealType,
+  }) {
+    if (quantity <= 0) {
+      throw ArgumentError.value(
+        quantity,
+        'quantity',
+        'Must be greater than zero.',
+      );
+    }
+    state = state.copyWith(
+      entries: [
+        for (final entry in state.entries)
+          if (entry.id == entryId)
+            entry.copyWith(quantity: quantity, mealType: mealType)
+          else
+            entry,
+      ],
+    );
+  }
+
   void removeEntry(String entryId) {
     state = state.copyWith(
       entries: [

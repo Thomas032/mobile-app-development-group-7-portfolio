@@ -654,30 +654,45 @@ class _MealEntryRow extends ConsumerWidget {
           color: colors.onErrorContainer,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                entry.foodItem.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.bodyMedium?.copyWith(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _openEditor(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.foodItem.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${entry.calories} kcal',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${entry.calories} kcal',
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _openEditor(BuildContext context) {
+    context.pushNamed(
+      'food-detail',
+      extra: FoodDetailRouteArgs(
+        foodItem: entry.foodItem,
+        target: FoodLogTarget(date: entry.date, mealType: entry.mealType),
+        editingEntry: entry,
       ),
     );
   }

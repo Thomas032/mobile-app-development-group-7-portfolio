@@ -118,6 +118,72 @@ void main() {
       expect(entries.single.id, 'entry-1');
     });
 
+    test('updates an existing entry quantity and meal type', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(dailyLogControllerProvider.notifier);
+
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+        mealType: MealType.breakfast,
+      );
+      controller.updateEntry(
+        entryId: 'entry-1',
+        quantity: 2.5,
+        mealType: MealType.lunch,
+      );
+
+      final entry = container.read(dailyLogControllerProvider).entries.single;
+      expect(entry.quantity, 2.5);
+      expect(entry.mealType, MealType.lunch);
+    });
+
+    test('updateEntry rejects non-positive quantities', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(dailyLogControllerProvider.notifier);
+
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+      );
+
+      expect(
+        () => controller.updateEntry(
+          entryId: 'entry-1',
+          quantity: 0,
+          mealType: MealType.lunch,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('updateEntry is a no-op for an unknown id', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(dailyLogControllerProvider.notifier);
+
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+      );
+      controller.updateEntry(
+        entryId: 'missing',
+        quantity: 5,
+        mealType: MealType.dinner,
+      );
+
+      final entry = container.read(dailyLogControllerProvider).entries.single;
+      expect(entry.quantity, 1);
+    });
+
     test('restoreEntry is a no-op when the id already exists', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

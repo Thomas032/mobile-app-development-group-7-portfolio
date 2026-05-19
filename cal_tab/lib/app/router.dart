@@ -42,6 +42,7 @@ final GoRouter appRouter = GoRouter(
           return FoodDetailScreen(
             foodItem: extra.foodItem,
             target: extra.target.normalized(),
+            editingEntry: extra.editingEntry,
           );
         }
 
