@@ -106,6 +106,16 @@ class DailyLogController extends Notifier<DailyLogState> {
     );
   }
 
+  /// Re-inserts a previously removed [entry]. Used by the home screen's
+  /// swipe-to-delete undo action. If an entry with the same id already exists
+  /// it is left untouched.
+  void restoreEntry(MealEntry entry) {
+    if (state.entries.any((e) => e.id == entry.id)) {
+      return;
+    }
+    state = state.copyWith(entries: [...state.entries, entry]);
+  }
+
   void clear() {
     state = const DailyLogState();
   }

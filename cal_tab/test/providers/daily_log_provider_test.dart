@@ -97,6 +97,45 @@ void main() {
       expect(container.read(dailyLogControllerProvider).entries, isEmpty);
     });
 
+    test('restores a previously removed entry', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(dailyLogControllerProvider.notifier);
+
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+      );
+      final original =
+          container.read(dailyLogControllerProvider).entries.single;
+      controller.removeEntry('entry-1');
+      controller.restoreEntry(original);
+
+      final entries = container.read(dailyLogControllerProvider).entries;
+      expect(entries, hasLength(1));
+      expect(entries.single.id, 'entry-1');
+    });
+
+    test('restoreEntry is a no-op when the id already exists', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(dailyLogControllerProvider.notifier);
+
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+      );
+      final existing =
+          container.read(dailyLogControllerProvider).entries.single;
+      controller.restoreEntry(existing);
+
+      expect(container.read(dailyLogControllerProvider).entries, hasLength(1));
+    });
+
     test('rejects non-positive quantities', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

@@ -627,39 +627,105 @@ class _MealEntriesPanel extends StatelessWidget {
   }
 }
 
-class _MealEntryRow extends StatelessWidget {
+class _MealEntryRow extends ConsumerWidget {
   const _MealEntryRow({required this.entry});
 
   final MealEntry entry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              entry.foodItem.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(
+    return Dismissible(
+      key: ValueKey('meal-entry-${entry.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDelete(context),
+      onDismissed: (_) => _handleDelete(context, ref),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: colors.errorContainer,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          Icons.delete_outline,
+          color: colors.onErrorContainer,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                entry.foodItem.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${entry.calories} kcal',
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete entry?'),
+          content: Text(
+            'Remove "${entry.foodItem.name}" from your log?',
           ),
-          const SizedBox(width: 12),
-          Text(
-            '${entry.calories} kcal',
-            style: textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
             ),
-          ),
-        ],
+            FilledButton.tonal(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(dailyLogControllerProvider.notifier);
+    final removed = entry;
+
+    controller.removeEntry(removed.id);
+    await controller.saveCurrentEntries();
+
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Removed "${removed.foodItem.name}"'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () async {
+            controller.restoreEntry(removed);
+            await controller.saveCurrentEntries();
+          },
+        ),
       ),
     );
   }
