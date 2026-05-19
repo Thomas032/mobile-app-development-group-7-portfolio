@@ -11,6 +11,7 @@ import 'package:cal_tab/providers/backup_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
 import 'package:cal_tab/services/file_download_util.dart';
+import 'package:cal_tab/utils/validators.dart';
 import 'package:cal_tab/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -767,13 +768,7 @@ class _NumberField extends StatelessWidget {
       controller: controller,
       decoration: InputDecoration(labelText: label, suffixText: suffix),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      validator: (value) {
-        final parsed = num.tryParse(value ?? '');
-        if (parsed == null || parsed <= 0) {
-          return 'Enter a valid $label';
-        }
-        return null;
-      },
+      validator: (value) => validatePositiveNumber(value, label),
     );
   }
 }
