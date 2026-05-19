@@ -25,6 +25,15 @@ class FoodLogTarget {
   }
 }
 
+enum AddFoodAutoAction { snap2cal }
+
+class AddFoodRouteArgs {
+  const AddFoodRouteArgs({required this.target, this.autoAction});
+
+  final FoodLogTarget target;
+  final AddFoodAutoAction? autoAction;
+}
+
 class FoodDetailRouteArgs {
   const FoodDetailRouteArgs({
     required this.foodItem,

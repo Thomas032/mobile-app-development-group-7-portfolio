@@ -14,9 +14,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddFoodScreen extends ConsumerStatefulWidget {
-  const AddFoodScreen({super.key, this.target});
+  const AddFoodScreen({super.key, this.target, this.autoAction});
 
   final FoodLogTarget? target;
+  final AddFoodAutoAction? autoAction;
 
   @override
   ConsumerState<AddFoodScreen> createState() => _AddFoodScreenState();
@@ -26,6 +27,24 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
   String _lastQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final action = widget.autoAction;
+    if (action != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final target = (widget.target ??
+                FoodLogTarget(date: ref.read(selectedLogDateProvider)))
+            .normalized();
+        switch (action) {
+          case AddFoodAutoAction.snap2cal:
+            _handleSnap2Cal(target);
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {

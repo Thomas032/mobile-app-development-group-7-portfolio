@@ -44,53 +44,57 @@ void main() {
     expect(find.byKey(const Key('clear_food_logs_button')), findsOneWidget);
   });
 
-  testWidgets('tab plus opens meal picker before add-food search', (
-    tester,
-  ) async {
-    Object? openedExtra;
+  testWidgets(
+    'tab plus opens the add-food action sheet and routes to manual search',
+    (tester) async {
+      Object? openedExtra;
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          secureKeyValueStoreProvider.overrideWithValue(
-            InMemorySecureKeyValueStore(),
-          ),
-        ],
-        child: MaterialApp.router(
-          routerConfig: GoRouter(
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (_, __) => const MainShellScreen(profile: _profile),
-              ),
-              GoRoute(
-                path: '/add-food',
-                name: 'add-food',
-                builder: (_, state) {
-                  openedExtra = state.extra;
-                  return const SizedBox(key: Key('add_food_route'));
-                },
-              ),
-            ],
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            secureKeyValueStoreProvider.overrideWithValue(
+              InMemorySecureKeyValueStore(),
+            ),
+          ],
+          child: MaterialApp.router(
+            routerConfig: GoRouter(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (_, __) =>
+                      const MainShellScreen(profile: _profile),
+                ),
+                GoRoute(
+                  path: '/add-food',
+                  name: 'add-food',
+                  builder: (_, state) {
+                    openedExtra = state.extra;
+                    return const SizedBox(key: Key('add_food_route'));
+                  },
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.byKey(const Key('open_add_food_button')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('open_add_food_button')));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Log food'), findsOneWidget);
-    expect(find.byKey(const Key('meal_picker_lunch')), findsOneWidget);
-    expect(find.byKey(const Key('add_food_route')), findsNothing);
+      expect(find.text('Log food'), findsOneWidget);
+      expect(find.byKey(const Key('add_food_action_snap2cal')), findsOneWidget);
+      expect(find.byKey(const Key('add_food_action_barcode')), findsOneWidget);
+      expect(find.byKey(const Key('add_food_action_search')), findsOneWidget);
+      expect(find.byKey(const Key('add_food_route')), findsNothing);
 
-    await tester.tap(find.byKey(const Key('meal_picker_lunch')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_food_action_search')));
+      await tester.pumpAndSettle();
 
-    final target = openedExtra as FoodLogTarget;
-    expect(target.mealType, MealType.lunch);
-    expect(find.byKey(const Key('add_food_route')), findsOneWidget);
-  });
+      expect(find.byKey(const Key('add_food_route')), findsOneWidget);
+      final target = openedExtra as FoodLogTarget;
+      expect(target.mealType, isA<MealType>());
+    },
+  );
 }
 
 const _profile = UserProfile(

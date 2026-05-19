@@ -18,6 +18,12 @@ final GoRouter appRouter = GoRouter(
       name: 'add-food',
       builder: (context, state) {
         final extra = state.extra;
+        if (extra is AddFoodRouteArgs) {
+          return AddFoodScreen(
+            target: extra.target.normalized(),
+            autoAction: extra.autoAction,
+          );
+        }
         return AddFoodScreen(
           target: extra is FoodLogTarget ? extra.normalized() : null,
         );

@@ -1,6 +1,6 @@
 import 'package:cal_tab/models/food_log_route_args.dart';
-import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
+import 'package:cal_tab/providers/nutrition_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/screens/ai_screen.dart';
 import 'package:cal_tab/screens/home_screen.dart';
@@ -37,34 +37,50 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       bottomNavigationBar: _MainBottomBar(
         selectedIndex: _selectedIndex,
         onTabSelected: (index) => setState(() => _selectedIndex = index),
-        onAddFood: () => _openMealPicker(selectedDate),
+        onAddFood: () => _openAddFood(selectedDate),
       ),
     );
   }
 
-  Future<void> _openMealPicker(DateTime selectedDate) async {
-    final mealType = await showModalBottomSheet<MealType>(
+  Future<void> _openAddFood(DateTime selectedDate) async {
+    final mealType = ref
+        .read(mealAssignmentServiceProvider)
+        .assignFor(DateTime.now());
+    final target = FoodLogTarget(date: selectedDate, mealType: mealType);
+
+    final action = await showModalBottomSheet<_AddFoodAction>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => const _MealPickerSheet(),
+      builder: (_) => const _AddFoodActionSheet(),
     );
 
-    if (!mounted || mealType == null) {
+    if (!mounted || action == null) {
       return;
     }
 
-    context.pushNamed(
-      'add-food',
-      extra: FoodLogTarget(date: selectedDate, mealType: mealType),
-    );
+    switch (action) {
+      case _AddFoodAction.search:
+        context.pushNamed('add-food', extra: target);
+      case _AddFoodAction.barcode:
+        context.pushNamed('scan-barcode', extra: target);
+      case _AddFoodAction.snap2cal:
+        context.pushNamed(
+          'add-food',
+          extra: AddFoodRouteArgs(
+            target: target,
+            autoAction: AddFoodAutoAction.snap2cal,
+          ),
+        );
+    }
   }
 }
 
-class _MealPickerSheet extends StatelessWidget {
-  const _MealPickerSheet();
+enum _AddFoodAction { snap2cal, barcode, search }
+
+class _AddFoodActionSheet extends StatelessWidget {
+  const _AddFoodActionSheet();
 
   @override
   Widget build(BuildContext context) {
@@ -109,14 +125,30 @@ class _MealPickerSheet extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Choose a meal before searching.',
+                'How would you like to add this entry?',
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 18),
-              for (final mealType in MealType.values)
-                _MealPickerAction(mealType: mealType),
+              _AddFoodActionRow(
+                action: _AddFoodAction.snap2cal,
+                icon: Icons.auto_awesome,
+                title: 'Snap2Cal',
+                subtitle: 'Take a photo and let AI estimate it.',
+              ),
+              _AddFoodActionRow(
+                action: _AddFoodAction.barcode,
+                icon: Icons.qr_code_scanner_rounded,
+                title: 'Barcode scan',
+                subtitle: 'Scan a product barcode.',
+              ),
+              _AddFoodActionRow(
+                action: _AddFoodAction.search,
+                icon: Icons.search_rounded,
+                title: 'Manual search',
+                subtitle: 'Search the Open Food Facts database.',
+              ),
             ],
           ),
         ),
@@ -125,10 +157,18 @@ class _MealPickerSheet extends StatelessWidget {
   }
 }
 
-class _MealPickerAction extends StatelessWidget {
-  const _MealPickerAction({required this.mealType});
+class _AddFoodActionRow extends StatelessWidget {
+  const _AddFoodActionRow({
+    required this.action,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
-  final MealType mealType;
+  final _AddFoodAction action;
+  final IconData icon;
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +181,9 @@ class _MealPickerAction extends StatelessWidget {
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          key: Key('meal_picker_${mealType.name}'),
+          key: Key('add_food_action_${action.name}'),
           borderRadius: BorderRadius.circular(18),
-          onTap: () => Navigator.of(context).pop(mealType),
+          onTap: () => Navigator.of(context).pop(action),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -155,19 +195,26 @@ class _MealPickerAction extends StatelessWidget {
                     color: colors.primaryContainer.withValues(alpha: 0.32),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    _mealIcon(mealType),
-                    color: colors.primary,
-                    size: 21,
-                  ),
+                  child: Icon(icon, color: colors.primary, size: 21),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _mealActionLabel(mealType),
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Icon(
@@ -270,28 +317,6 @@ class _MainBottomBar extends StatelessWidget {
       ),
     );
   }
-}
-
-String _mealActionLabel(MealType mealType) {
-  return switch (mealType) {
-    MealType.breakfast => 'Breakfast',
-    MealType.snackMorning => 'Morning snack',
-    MealType.lunch => 'Lunch',
-    MealType.snackAfternoon => 'Afternoon snack',
-    MealType.dinner => 'Dinner',
-    MealType.secondDinner => 'Second dinner',
-  };
-}
-
-IconData _mealIcon(MealType mealType) {
-  return switch (mealType) {
-    MealType.breakfast => Icons.free_breakfast_outlined,
-    MealType.snackMorning => Icons.bakery_dining_outlined,
-    MealType.lunch => Icons.lunch_dining_outlined,
-    MealType.snackAfternoon => Icons.cookie_outlined,
-    MealType.dinner => Icons.dinner_dining_outlined,
-    MealType.secondDinner => Icons.nightlight_outlined,
-  };
 }
 
 class _BottomTabButton extends StatelessWidget {
