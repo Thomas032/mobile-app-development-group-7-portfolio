@@ -10,11 +10,9 @@ import 'package:cal_tab/providers/app_settings_provider.dart';
 import 'package:cal_tab/providers/backup_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
-import 'package:cal_tab/services/backup_service.dart';
+import 'package:cal_tab/services/file_download_util.dart';
 import 'package:cal_tab/widgets/app_card.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -581,64 +579,12 @@ class _ExportBackupDialog extends ConsumerWidget {
             }
 
             if (!context.mounted) return;
-            await _downloadBackupFile(context, backupJson);
+            await FileDownloadUtil.exportBackupJson(context, backupJson);
           },
           child: const Text('Export'),
         ),
       ],
     );
-  }
-}
-
-/// Download backup file
-Future<void> _downloadBackupFile(
-  BuildContext context,
-  String backupJson,
-) async {
-  try {
-    final fileName = BackupService.getBackupFileName();
-
-    // For all platforms, copy to clipboard and show where to save
-    // On web: User can manually download from browser, or copy and paste into file
-    // On mobile: User copies and can paste into any text file manager
-    await Clipboard.setData(ClipboardData(text: backupJson));
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Backup copied to clipboard!'),
-                  Text(
-                    'Save as: $fileName',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'VIEW',
-          onPressed: () {
-            // Could show the JSON in a dialog here
-          },
-        ),
-      ),
-    );
-  } catch (e) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error: $e')));
   }
 }
 
@@ -653,6 +599,7 @@ class _ImportBackupDialog extends StatefulWidget {
 
 class _ImportBackupDialogState extends State<_ImportBackupDialog> {
   late TextEditingController _controller;
+  bool _isImporting = false;
 
   @override
   void initState() {
@@ -668,31 +615,55 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final useFilePicker = FileDownloadUtil.isMobilePlatform;
+
     return AlertDialog(
       title: const Text('Import Backup'),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Paste your backup JSON data here:'),
-            const SizedBox(height: 12),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                minLines: 5,
-                maxLines: 10,
-                expands: false,
-                decoration: const InputDecoration(
-                  labelText: 'Paste backup JSON',
-                  hintText: 'Paste the backup file content...',
-                  border: OutlineInputBorder(),
-                ),
+        child: useFilePicker
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Choose a backup JSON file from your device to restore your data.',
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isImporting ? null : _importFromFile,
+                    icon: _isImporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.upload_file_outlined),
+                    label: Text(
+                      _isImporting ? 'Importing...' : 'Choose backup file',
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('Paste your backup JSON data here:'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _controller,
+                    minLines: 5,
+                    maxLines: 10,
+                    expands: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Paste backup JSON',
+                      hintText: 'Paste the backup file content...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
       actions: [
         TextButton(
@@ -700,36 +671,79 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () async {
-            final backupJson = _controller.text.trim();
-            if (backupJson.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please paste backup data')),
-              );
-              return;
-            }
-
-            final success = await widget.parentRef
-                .read(backupControllerProvider.notifier)
-                .importData(backupJson);
-
-            if (!mounted) return;
-            Navigator.of(context).pop();
-
-            if (success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Backup imported successfully!')),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed to import backup')),
-              );
-            }
-          },
-          child: const Text('Import'),
+          onPressed: _isImporting
+              ? null
+              : useFilePicker
+              ? _importFromFile
+              : _importFromClipboard,
+          child: Text(useFilePicker ? 'Import file' : 'Import'),
         ),
       ],
     );
+  }
+
+  Future<void> _importFromFile() async {
+    setState(() => _isImporting = true);
+
+    try {
+      final backupJson = await FileDownloadUtil.pickBackupJson();
+      if (!mounted) return;
+
+      if (backupJson == null || backupJson.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No backup file selected')),
+        );
+        return;
+      }
+
+      final success = await widget.parentRef
+          .read(backupControllerProvider.notifier)
+          .importData(backupJson.trim());
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup imported successfully!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to import backup')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isImporting = false);
+      }
+    }
+  }
+
+  Future<void> _importFromClipboard() async {
+    final backupJson = _controller.text.trim();
+    if (backupJson.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please paste backup data')));
+      return;
+    }
+
+    final success = await widget.parentRef
+        .read(backupControllerProvider.notifier)
+        .importData(backupJson);
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup imported successfully!')),
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to import backup')));
+    }
   }
 }
 

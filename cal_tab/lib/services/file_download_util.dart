@@ -1,82 +1,137 @@
-import 'dart:convert' show utf8;
+import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:cal_tab/services/backup_service.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Utility class for downloading files
 class FileDownloadUtil {
-  /// Download a file with the given filename and content
-  /// Supports web platform; on mobile, throws UnsupportedError
-  static Future<void> downloadFile(String filename, String content) async {
-    if (kIsWeb) {
-      _downloadFileWeb(filename, content);
+  const FileDownloadUtil._();
+
+  static bool get isMobilePlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
+  static Future<void> exportBackupJson(
+    BuildContext context,
+    String backupJson,
+  ) async {
+    final fileName = BackupService.getBackupFileName();
+    final bytes = Uint8List.fromList(utf8.encode(backupJson));
+
+    if (isMobilePlatform) {
+      await _saveBackupFileMobile(context, bytes, fileName);
     } else {
-      // Mobile platforms: not supported by this util
-      // Caller should handle by copying to clipboard and showing instructions
-      throw UnsupportedError('Direct file download not supported on mobile');
+      await _saveBackupFileDesktop(context, backupJson, bytes, fileName);
     }
   }
 
-  /// Download file on web platform using data URL and anchor element
-  static void _downloadFileWeb(String filename, String content) {
+  static Future<void> _saveBackupFileMobile(
+    BuildContext context,
+    Uint8List bytes,
+    String fileName,
+  ) async {
     try {
-      // Use dynamic loading to access dart:html only on web
-      _executeWebDownload(filename, content);
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Backup speichern',
+        fileName: fileName,
+        bytes: bytes,
+      );
+
+      if (!context.mounted) return;
+
+      if (path != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Backup gespeichert: $path')));
+      }
     } catch (e) {
-      throw Exception('Failed to download file: $e');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Fehler beim Speichern: $e')));
     }
   }
 
-  /// Execute download using JavaScript interop
-  static void _executeWebDownload(String filename, String content) {
-    // This uses reflection to avoid import errors on non-web platforms
-    try {
-      // Create data URL with JSON content
-      final dataUrl =
-          'data:application/json;charset=utf-8,' + Uri.encodeComponent(content);
+  static Future<void> _saveBackupFileDesktop(
+    BuildContext context,
+    String backupJson,
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    if (kIsWeb) {
+      await _copyToClipboardFallback(context, backupJson, fileName);
+      return;
+    }
 
-      // Try to use dart:html via dynamic invoke
-      _createAndClickAnchor(dataUrl, filename);
+    try {
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Backup speichern',
+        fileName: fileName,
+        bytes: bytes,
+      );
+
+      if (!context.mounted) return;
+
+      if (path != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Backup gespeichert: $path')));
+      }
     } catch (e) {
-      rethrow;
+      await _copyToClipboardFallback(context, backupJson, fileName);
     }
   }
 
-  /// Create and click an anchor element to trigger download
-  /// Uses dynamic access to avoid compile-time dart:html dependency on non-web
-  static void _createAndClickAnchor(String href, String download) {
-    try {
-      // We need to access window and document from dart:html
-      // Using a try-catch approach to handle both web and non-web gracefully
-      _invokeDownload(href, download);
-    } catch (e) {
-      throw Exception('Could not invoke download: $e');
-    }
+  static Future<void> _copyToClipboardFallback(
+    BuildContext context,
+    String backupJson,
+    String fileName,
+  ) async {
+    await Clipboard.setData(ClipboardData(text: backupJson));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Backup in die Zwischenablage kopiert!'),
+                  Text(
+                    'Dateiname: $fileName',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
 
-  /// Invoke download through dynamic method calls
-  static void _invokeDownload(String href, String download) {
-    // This is a no-op on non-web; should not be called there
-    // On web, this would use window and document APIs
-    // For now, we rely on try-catch to prevent errors
-    if (!kIsWeb) return;
+  static Future<String?> pickBackupJson() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['json'],
+      withData: true,
+    );
 
-    try {
-      // Dynamically create the anchor element
-      final script =
-          '''
-        (function() {
-          var link = document.createElement('a');
-          link.href = '$href';
-          link.download = '$download';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        })();
-      ''';
-      // This would need to be executed via package:js or similar
-      // For now, we use a simpler approach
-    } catch (e) {
-      // Ignore
-    }
+    if (result == null || result.files.isEmpty) return null;
+
+    final bytes = result.files.single.bytes;
+    if (bytes == null) return null;
+
+    return utf8.decode(bytes);
   }
 }
