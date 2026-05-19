@@ -200,6 +200,21 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                     ),
                     label: Text(widget.isEditing ? 'Update' : 'Add to day'),
                   ),
+                  if (widget.isEditing) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      key: const Key('delete_entry_button'),
+                      onPressed: _isSaving ? null : _deleteEntry,
+                      icon: Icon(Icons.delete_outline, color: colors.error),
+                      label: Text(
+                        'Delete entry',
+                        style: TextStyle(color: colors.error),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colors.error),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -247,6 +262,49 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _deleteEntry() async {
+    final editing = widget.editingEntry;
+    if (editing == null) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete entry?'),
+          content: Text(
+            'Remove "${editing.foodItem.name}" from your log?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonal(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    final controller = ref.read(dailyLogControllerProvider.notifier);
+    controller.removeEntry(editing.id);
+    await controller.saveCurrentEntries();
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Future<void> _submit(FoodItem food) async {
