@@ -184,6 +184,35 @@ void main() {
       expect(entry.quantity, 1);
     });
 
+    test('recentFoodItemsProvider returns unique foods, most recent first', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(dailyLogControllerProvider.notifier);
+
+      controller.logFood(
+        entryId: 'entry-1',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 5, 8),
+        quantity: 1,
+      );
+      controller.logFood(
+        entryId: 'entry-2',
+        foodItem: _oats,
+        date: DateTime(2026, 5, 6, 9),
+        quantity: 1,
+      );
+      controller.logFood(
+        entryId: 'entry-3',
+        foodItem: _banana,
+        date: DateTime(2026, 5, 7, 8),
+        quantity: 1,
+      );
+
+      final recents = container.read(recentFoodItemsProvider);
+
+      expect(recents.map((f) => f.id).toList(), ['banana', 'oats']);
+    });
+
     test('restoreEntry is a no-op when the id already exists', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -337,6 +366,16 @@ const _banana = FoodItem(
   carbsGrams: 27,
   fatGrams: 0.4,
   fiberGrams: 3.1,
+);
+
+const _oats = FoodItem(
+  id: 'oats',
+  name: 'Oats',
+  calories: 389,
+  proteinGrams: 16.9,
+  carbsGrams: 66,
+  fatGrams: 6.9,
+  fiberGrams: 10.6,
 );
 
 const _profile = UserProfile(

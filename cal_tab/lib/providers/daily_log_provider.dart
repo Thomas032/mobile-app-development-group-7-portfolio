@@ -148,3 +148,23 @@ class DailyLogController extends Notifier<DailyLogState> {
 
 final dailyLogControllerProvider =
     NotifierProvider<DailyLogController, DailyLogState>(DailyLogController.new);
+
+/// Most-recently-logged foods, deduplicated by id, most recent first.
+/// Used by the Add Food screen to pin frequently-eaten foods to the top.
+final recentFoodItemsProvider = Provider<List<FoodItem>>((ref) {
+  const maxItems = 5;
+  final entries = ref.watch(dailyLogControllerProvider).entries;
+
+  final sorted = [...entries]
+    ..sort((a, b) => b.date.compareTo(a.date));
+
+  final seen = <String>{};
+  final result = <FoodItem>[];
+  for (final entry in sorted) {
+    if (seen.add(entry.foodItem.id)) {
+      result.add(entry.foodItem);
+      if (result.length >= maxItems) break;
+    }
+  }
+  return result;
+});
