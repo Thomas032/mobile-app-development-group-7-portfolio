@@ -46,7 +46,9 @@ class SettingsScreen extends ConsumerWidget {
             _ProfileSection(profile: profile),
           ],
           const SizedBox(height: 16),
-          const _DataSection(),
+          const _BackupSection(),
+          const SizedBox(height: 16),
+          const _DangerZoneSection(),
           const SizedBox(height: 16),
           const _AboutSection(),
         ],
@@ -60,23 +62,26 @@ class _SectionCard extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.child,
+    this.accentColor,
   });
 
   final String title;
   final IconData icon;
   final Widget child;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
+    final iconColor = accentColor ?? colors.primary;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(icon, color: colors.primary),
+              Icon(icon, color: iconColor),
               const SizedBox(width: 10),
               Text(
                 title,
@@ -500,9 +505,7 @@ class _AboutSection extends StatelessWidget {
         children: [
           Text(
             'CalTab',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
           Text(
             'Version $_appVersion',
@@ -519,9 +522,7 @@ class _AboutSection extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Team',
-            style: textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           for (final name in _teamMembers)
@@ -535,38 +536,19 @@ class _AboutSection extends StatelessWidget {
   }
 }
 
-class _DataSection extends ConsumerWidget {
-  const _DataSection();
+class _BackupSection extends ConsumerWidget {
+  const _BackupSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final backupState = ref.watch(backupControllerProvider);
 
     return _SectionCard(
-      title: 'Data',
-      icon: Icons.storage_outlined,
+      title: 'Backup',
+      icon: Icons.backup_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          OutlinedButton.icon(
-            key: const Key('reset_profile_button'),
-            onPressed: () => ref
-                .read(profileSetupControllerProvider.notifier)
-                .clearSavedProfile(),
-            icon: const Icon(Icons.restart_alt),
-            label: const Text('Reset onboarding'),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            key: const Key('clear_food_logs_button'),
-            onPressed: () => ref
-                .read(dailyLogControllerProvider.notifier)
-                .clearSavedEntries(),
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Clear food logs'),
-          ),
-          const SizedBox(height: 16),
-          // Backup/Export section
           FilledButton.icon(
             key: const Key('export_backup_button'),
             onPressed: backupState == BackupState.loading
@@ -607,6 +589,126 @@ class _DataSection extends ConsumerWidget {
       context: context,
       builder: (context) => _ImportBackupDialog(parentRef: ref),
     );
+  }
+}
+
+class _DangerZoneSection extends ConsumerWidget {
+  const _DangerZoneSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
+
+    return _SectionCard(
+      title: 'Danger Zone',
+      icon: Icons.warning_amber_outlined,
+      accentColor: colors.error,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            key: const Key('reset_profile_button'),
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: colors.onError,
+            ),
+            onPressed: () => _confirmAndResetOnboarding(context, ref),
+            icon: const Icon(Icons.restart_alt),
+            label: const Text('Reset onboarding'),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const Key('clear_food_logs_button'),
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: colors.onError,
+            ),
+            onPressed: () => _confirmAndClearFoodLogs(context, ref),
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Clear food logs'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmAndResetOnboarding(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await _showDangerConfirmation(
+      context,
+      title: 'Reset onboarding?',
+      message:
+          'Do you really want to delete your onboarding progress? This will remove your saved profile setup and restart the onboarding. It will keep your food logs. Consider exporting a backup first if you want to keep your data.',
+      confirmLabel: 'Reset onboarding',
+    );
+    if (!confirmed) return;
+
+    await ref.read(profileSetupControllerProvider.notifier).clearSavedProfile();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Onboarding reset.')));
+  }
+
+  Future<void> _confirmAndClearFoodLogs(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await _showDangerConfirmation(
+      context,
+      title: 'Clear food logs?',
+      message:
+          'Do you really want to delete all food logs? This permanently removes your meal history. Consider exporting a backup first if you want to keep your data.',
+      confirmLabel: 'Clear food logs',
+    );
+    if (!confirmed) return;
+
+    await ref.read(dailyLogControllerProvider.notifier).clearSavedEntries();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Food logs cleared.')));
+  }
+
+  Future<bool> _showDangerConfirmation(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) async {
+    final colors = Theme.of(context).colorScheme;
+
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              icon: Icon(
+                Icons.warning_amber_rounded,
+                color: colors.error,
+                size: 32,
+              ),
+              title: Text(title),
+              content: Text(message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.error,
+                    foregroundColor: colors.onError,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(confirmLabel),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 }
 
