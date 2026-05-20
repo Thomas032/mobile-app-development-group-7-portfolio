@@ -97,6 +97,26 @@ class DailyLogController extends Notifier<DailyLogState> {
     clear();
   }
 
+  void updateEntryQuantity(String entryId, double quantity) {
+    if (quantity <= 0) {
+      throw ArgumentError.value(
+        quantity,
+        'quantity',
+        'Must be greater than zero.',
+      );
+    }
+
+    state = state.copyWith(
+      entries: [
+        for (final entry in state.entries)
+          if (entry.id == entryId)
+            entry.copyWith(quantity: quantity)
+          else
+            entry,
+      ],
+    );
+  }
+
   void removeEntry(String entryId) {
     state = state.copyWith(
       entries: [

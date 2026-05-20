@@ -144,10 +144,10 @@ class _TopBar extends StatelessWidget {
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
+	                ),
+	              ),
+	            ),
+	          ),
           _PillBadge(
             key: const Key('date_badge'),
             icon: Icons.calendar_today_rounded,
@@ -642,13 +642,25 @@ class _MealEntryRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              entry.foodItem.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.foodItem.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${(entry.quantity * 100).round()} g',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
@@ -659,9 +671,99 @@ class _MealEntryRow extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(width: 4),
+          _MealEntryActions(entry: entry),
         ],
       ),
     );
+  }
+}
+
+enum _MealEntryAction { edit, delete }
+
+class _MealEntryActions extends ConsumerWidget {
+  const _MealEntryActions({required this.entry});
+
+  final MealEntry entry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<_MealEntryAction>(
+      key: Key('meal_entry_actions_${entry.id}'),
+      tooltip: 'Food actions',
+      icon: const Icon(Icons.more_horiz_rounded),
+      onSelected: (action) async {
+        switch (action) {
+          case _MealEntryAction.edit:
+            await _editQuantity(context, ref);
+          case _MealEntryAction.delete:
+            await _deleteEntry(ref);
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem<_MealEntryAction>(
+          value: _MealEntryAction.edit,
+          child: Text('Edit amount'),
+        ),
+        PopupMenuItem<_MealEntryAction>(
+          value: _MealEntryAction.delete,
+          child: Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _editQuantity(BuildContext context, WidgetRef ref) async {
+    final quantityController = TextEditingController(
+      text: '${(entry.quantity * 100).round()}',
+    );
+
+    final grams = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit amount'),
+        content: TextField(
+          key: const Key('edit_food_amount_field'),
+          controller: quantityController,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Amount',
+            suffixText: 'g',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final grams = double.tryParse(quantityController.text.trim());
+              if (grams == null || grams <= 0) {
+                return;
+              }
+              Navigator.of(context).pop(grams);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (grams == null || !context.mounted) {
+      return;
+    }
+
+    final controller = ref.read(dailyLogControllerProvider.notifier);
+    controller.updateEntryQuantity(entry.id, grams / 100.0);
+    await controller.saveCurrentEntries();
+  }
+
+  Future<void> _deleteEntry(WidgetRef ref) async {
+    final controller = ref.read(dailyLogControllerProvider.notifier);
+    controller.removeEntry(entry.id);
+    await controller.saveCurrentEntries();
   }
 }
 
