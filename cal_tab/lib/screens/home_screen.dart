@@ -144,10 +144,10 @@ class _TopBar extends StatelessWidget {
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
+	                ),
+	              ),
+	            ),
+	          ),
           _PillBadge(
             key: const Key('date_badge'),
             icon: Icons.calendar_today_rounded,
@@ -743,6 +743,20 @@ class _MealEntryRow extends ConsumerWidget {
         ),
       ),
     );
+
+    if (grams == null || !context.mounted) {
+      return;
+    }
+
+    final controller = ref.read(dailyLogControllerProvider.notifier);
+    controller.updateEntryQuantity(entry.id, grams / 100.0);
+    await controller.saveCurrentEntries();
+  }
+
+  Future<void> _deleteEntry(WidgetRef ref) async {
+    final controller = ref.read(dailyLogControllerProvider.notifier);
+    controller.removeEntry(entry.id);
+    await controller.saveCurrentEntries();
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/screens/home_screen.dart';
 import 'package:cal_tab/widgets/log_calendar.dart';
@@ -15,6 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../fakes/fake_meal_log_repository.dart';
 
 Future<void> _scrollHomeUntilVisible(WidgetTester tester, Finder finder) async {
   final mainScrollable = find
@@ -34,11 +37,14 @@ void main() {
     DateTime? selectedDate,
     void Function(Object?)? onAddFoodExtra,
   }) {
+    final repository = FakeMealLogRepository(initialEntries: entries);
+
     return ProviderScope(
       overrides: [
         dailyLogControllerProvider.overrideWith(
           () => _SeedableLogController(entries),
         ),
+        mealLogRepositoryProvider.overrideWith((ref) async => repository),
         if (selectedDate != null)
           selectedLogDateProvider.overrideWith(
             () => _SeedableSelectedLogDateController(selectedDate),
@@ -298,6 +304,52 @@ void main() {
 
     expect(openedTarget?.date, yesterday);
     expect(openedTarget?.mealType, MealType.breakfast);
+  });
+
+  testWidgets('can edit logged food amount and calories update correctly', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildScreen(entries: [_breakfastEntry]));
+    await tester.pump();
+
+    await _scrollHomeUntilVisible(tester, find.text('Banana'));
+
+    expect(find.text('210'), findsOneWidget);
+    expect(find.text('200 g'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('meal_entry_actions_e1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit amount'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('edit_food_amount_field')),
+      '150',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('158 kcal'), findsNWidgets(2));
+    expect(find.text('150 g'), findsOneWidget);
+    expect(find.text('158'), findsOneWidget);
+  });
+
+  testWidgets('can delete logged food and calories reset correctly', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildScreen(entries: [_breakfastEntry]));
+    await tester.pump();
+
+    await _scrollHomeUntilVisible(tester, find.text('Banana'));
+
+    await tester.tap(find.byKey(const Key('meal_entry_actions_e1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Banana'), findsNothing);
+    expect(find.text('No food logged yet'), findsOneWidget);
+    expect(find.text('0'), findsWidgets);
   });
 }
 
