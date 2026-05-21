@@ -43,9 +43,9 @@ class GoalStep extends ConsumerWidget {
                 child: ChoiceCard<GoalType>(
                   key: Key('goal_${goal.name}_card'),
                   selected: selectedGoal == goal,
-                  title: _goalTitle(goal),
-                  subtitle: _goalSubtitle(goal),
-                  icon: _goalIcon(goal),
+                  title: goal.headline,
+                  subtitle: goal.tagline,
+                  icon: goal.icon,
                   onTap: () => controller.setGoal(goal),
                 ),
               ),
@@ -58,26 +58,3 @@ class GoalStep extends ConsumerWidget {
   }
 }
 
-String _goalTitle(GoalType goalType) {
-  return switch (goalType) {
-    GoalType.cut => 'Lean out',
-    GoalType.maintain => 'Stay on track',
-    GoalType.bulk => 'Build up',
-  };
-}
-
-String _goalSubtitle(GoalType goalType) {
-  return switch (goalType) {
-    GoalType.cut => 'Create a calorie deficit with steady pacing.',
-    GoalType.maintain => 'Keep your current weight and consistency.',
-    GoalType.bulk => 'Support muscle gain with extra fuel.',
-  };
-}
-
-IconData _goalIcon(GoalType goalType) {
-  return switch (goalType) {
-    GoalType.cut => Icons.trending_down_rounded,
-    GoalType.maintain => Icons.balance_rounded,
-    GoalType.bulk => Icons.trending_up_rounded,
-  };
-}

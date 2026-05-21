@@ -96,7 +96,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
               label: 'Goal',
               value: _goalType,
               values: GoalType.values,
-              labelFor: _goalLabel,
+              labelFor: (v) => v.shortLabel,
               onChanged: (v) => setState(() => _goalType = v),
             ),
             const SizedBox(height: 16),
@@ -134,10 +134,3 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
   }
 }
 
-String _goalLabel(GoalType goalType) {
-  return switch (goalType) {
-    GoalType.cut => 'Cut',
-    GoalType.maintain => 'Maintain',
-    GoalType.bulk => 'Bulk',
-  };
-}
