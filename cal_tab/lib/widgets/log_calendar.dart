@@ -48,8 +48,8 @@ class _LogCalendarState extends State<LogCalendar> {
         final targetPage = LogCalendar._initialPage + weekDelta;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !_pageController.hasClients) return;
-          final current = _pageController.page?.round() ??
-              LogCalendar._initialPage;
+          final current =
+              _pageController.page?.round() ?? LogCalendar._initialPage;
           if ((current - targetPage).abs() <= 1) {
             _pageController.animateToPage(
               targetPage,
@@ -147,6 +147,7 @@ class _WeekStrip extends StatelessWidget {
 }
 
 enum _CalendarDayStatus {
+  overGoal,
   goalReached,
   belowGoal,
   emptyOrFuture;
@@ -168,14 +169,16 @@ enum _CalendarDayStatus {
     }
 
     final summary = logState.summaryFor(date: normalized, profile: profile);
-    return summary.caloriesConsumed >= profile.calorieGoal
-        ? _CalendarDayStatus.goalReached
-        : _CalendarDayStatus.belowGoal;
+    final progress = summary.calorieProgress;
+    if (progress > 1.15) return _CalendarDayStatus.overGoal;
+    if (progress >= 0.85) return _CalendarDayStatus.goalReached;
+    return _CalendarDayStatus.belowGoal;
   }
 
   Color color(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return switch (this) {
+      _CalendarDayStatus.overGoal => colors.error,
       _CalendarDayStatus.goalReached => const Color(0xFF34C759),
       _CalendarDayStatus.belowGoal => const Color(0xFFFF9500),
       _CalendarDayStatus.emptyOrFuture => colors.surfaceContainerHigh,
@@ -185,6 +188,7 @@ enum _CalendarDayStatus {
   Color foregroundColor(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return switch (this) {
+      _CalendarDayStatus.overGoal ||
       _CalendarDayStatus.goalReached ||
       _CalendarDayStatus.belowGoal => Colors.white,
       _CalendarDayStatus.emptyOrFuture => colors.onSurfaceVariant,

@@ -8,6 +8,7 @@ class AppTheme {
   static const Color _tertiary = Color(0xFFC0000A);
   static const Color _surface = Color(0xFFFAF9FE);
   static const Color _darkSurface = Color(0xFF1A1B1F);
+  static const Color _error = Color(0xFFE53935);
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
@@ -17,6 +18,7 @@ class AppTheme {
       secondary: _secondary,
       tertiary: _tertiary,
       surface: _surface,
+      error: _error,
     );
 
     return _baseTheme(scheme).copyWith(scaffoldBackgroundColor: _surface);
@@ -30,6 +32,7 @@ class AppTheme {
       secondary: const Color(0xFFFFB874),
       tertiary: const Color(0xFFFFB4AA),
       surface: _darkSurface,
+      error: _error,
     );
 
     return _baseTheme(scheme).copyWith(scaffoldBackgroundColor: _darkSurface);
