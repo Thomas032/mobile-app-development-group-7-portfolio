@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/stats_snapshot.dart';
+import 'package:cal_tab/utils/date_formatting.dart';
 import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:flutter/material.dart';
 
@@ -177,7 +178,7 @@ class _CalorieBar extends StatelessWidget {
         : colors.surfaceContainerHigh;
 
     return Tooltip(
-      message: '${shortDate(day.date)}: $calories kcal',
+      message: '${formatShortDate(day.date)}: $calories kcal',
       child: Align(
         alignment: Alignment.bottomCenter,
         child: FractionallySizedBox(

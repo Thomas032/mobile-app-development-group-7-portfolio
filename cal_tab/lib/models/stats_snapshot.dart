@@ -4,6 +4,7 @@ import 'package:cal_tab/models/daily_nutrition_summary.dart';
 import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
+import 'package:cal_tab/utils/date_formatting.dart';
 
 class StatsSnapshot {
   const StatsSnapshot({
@@ -64,7 +65,8 @@ class StatsSnapshot {
     };
   }
 
-  String get rangeLabel => '${shortDate(startDate)} - ${shortDate(endDate)}';
+  String get rangeLabel =>
+      '${formatShortDate(startDate)} - ${formatShortDate(endDate)}';
 
   double _averageLoggedDayMacro(
     double Function(DailyNutritionSummary summary) valueFor,
@@ -105,20 +107,3 @@ class StatsDay {
   }
 }
 
-String shortDate(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${months[date.month - 1]} ${date.day}';
-}

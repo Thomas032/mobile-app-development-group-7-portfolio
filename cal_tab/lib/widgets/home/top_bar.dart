@@ -1,3 +1,4 @@
+import 'package:cal_tab/utils/date_formatting.dart';
 import 'package:flutter/material.dart';
 
 class HomeTopBar extends StatelessWidget {
@@ -12,26 +13,11 @@ class HomeTopBar extends StatelessWidget {
   final DateTime date;
   final VoidCallback onDatePressed;
 
-  static const _months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
-    final dateLabel = '${_months[date.month - 1]} ${date.day}';
+    final dateLabel = formatShortDate(date);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
