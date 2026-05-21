@@ -213,7 +213,7 @@ class _MacroView extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: colors.onSurface,
                     ),
                   ),
                   const SizedBox(width: 6),
