@@ -1,0 +1,170 @@
+import 'package:cal_tab/models/daily_nutrition_summary.dart';
+import 'package:cal_tab/models/food_item.dart';
+import 'package:cal_tab/models/meal_entry.dart';
+import 'package:cal_tab/models/meal_type.dart';
+import 'package:cal_tab/models/user_profile.dart';
+import 'package:cal_tab/providers/nutrition_providers.dart';
+import 'package:cal_tab/providers/repository_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class DailyLogState {
+  const DailyLogState({this.entries = const []});
+
+  final List<MealEntry> entries;
+
+  DailyLogState copyWith({List<MealEntry>? entries}) {
+    return DailyLogState(entries: entries ?? this.entries);
+  }
+
+  List<MealEntry> entriesForDate(DateTime date) {
+    return entries.where((entry) => _isSameDay(entry.date, date)).toList();
+  }
+
+  DailyNutritionSummary summaryFor({
+    required DateTime date,
+    required UserProfile profile,
+  }) {
+    return DailyNutritionSummary.fromEntries(
+      calorieGoal: profile.calorieGoal,
+      macroTargets: profile.macroTargets,
+      entries: entriesForDate(date),
+    );
+  }
+
+  /// Returns the number of consecutive days ending on [today] that have at
+  /// least one logged entry. Returns 0 if today has no entries.
+  int streakDays(DateTime today) {
+    var streak = 0;
+    var day = DateTime(today.year, today.month, today.day);
+    while (entries.any((e) => _isSameDay(e.date, day))) {
+      streak++;
+      day = day.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
+  static bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class DailyLogController extends Notifier<DailyLogState> {
+  @override
+  DailyLogState build() {
+    return const DailyLogState();
+  }
+
+  void logFood({
+    required String entryId,
+    required FoodItem foodItem,
+    required DateTime date,
+    required double quantity,
+    MealType? mealType,
+  }) {
+    if (quantity <= 0) {
+      throw ArgumentError.value(
+        quantity,
+        'quantity',
+        'Must be greater than zero.',
+      );
+    }
+
+    final assignmentService = ref.read(mealAssignmentServiceProvider);
+    final entry = MealEntry(
+      id: entryId,
+      date: date,
+      mealType: mealType ?? assignmentService.assignFor(date),
+      foodItem: foodItem,
+      quantity: quantity,
+    );
+
+    state = state.copyWith(entries: [...state.entries, entry]);
+  }
+
+  Future<void> loadSavedEntries() async {
+    final repository = await ref.read(mealLogRepositoryProvider.future);
+    state = state.copyWith(entries: await repository.loadEntries());
+  }
+
+  Future<void> saveCurrentEntries() async {
+    final repository = await ref.read(mealLogRepositoryProvider.future);
+    await repository.saveEntries(state.entries);
+  }
+
+  Future<void> clearSavedEntries() async {
+    final repository = await ref.read(mealLogRepositoryProvider.future);
+    await repository.clearEntries();
+    clear();
+  }
+
+  /// Updates the quantity and/or meal type of an existing entry. Silently
+  /// ignored when no entry with [entryId] exists.
+  void updateEntry({
+    required String entryId,
+    required double quantity,
+    required MealType mealType,
+  }) {
+    if (quantity <= 0) {
+      throw ArgumentError.value(
+        quantity,
+        'quantity',
+        'Must be greater than zero.',
+      );
+    }
+    state = state.copyWith(
+      entries: [
+        for (final entry in state.entries)
+          if (entry.id == entryId)
+            entry.copyWith(quantity: quantity, mealType: mealType)
+          else
+            entry,
+      ],
+    );
+  }
+
+  void removeEntry(String entryId) {
+    state = state.copyWith(
+      entries: [
+        for (final entry in state.entries)
+          if (entry.id != entryId) entry,
+      ],
+    );
+  }
+
+  /// Re-inserts a previously removed [entry]. Used by the home screen's
+  /// swipe-to-delete undo action. If an entry with the same id already exists
+  /// it is left untouched.
+  void restoreEntry(MealEntry entry) {
+    if (state.entries.any((e) => e.id == entry.id)) {
+      return;
+    }
+    state = state.copyWith(entries: [...state.entries, entry]);
+  }
+
+  void clear() {
+    state = const DailyLogState();
+  }
+}
+
+final dailyLogControllerProvider =
+    NotifierProvider<DailyLogController, DailyLogState>(DailyLogController.new);
+
+/// Most-recently-logged foods, deduplicated by id, most recent first.
+/// Used by the Add Food screen to pin frequently-eaten foods to the top.
+final recentFoodItemsProvider = Provider<List<FoodItem>>((ref) {
+  const maxItems = 5;
+  final entries = ref.watch(dailyLogControllerProvider).entries;
+
+  final sorted = [...entries]
+    ..sort((a, b) => b.date.compareTo(a.date));
+
+  final seen = <String>{};
+  final result = <FoodItem>[];
+  for (final entry in sorted) {
+    if (seen.add(entry.foodItem.id)) {
+      result.add(entry.foodItem);
+      if (result.length >= maxItems) break;
+    }
+  }
+  return result;
+});
