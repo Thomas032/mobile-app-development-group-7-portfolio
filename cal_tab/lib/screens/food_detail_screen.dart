@@ -37,6 +37,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
   late FoodLogTarget _target;
   late _InputMode _inputMode;
   bool _isSaving = false;
+  bool _expandedNutrients = false;
 
   @override
   void initState() {
@@ -147,7 +148,50 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                   _NutrientRow(label: 'Protein', value: food.proteinGrams),
                   _NutrientRow(label: 'Carbs', value: food.carbsGrams),
                   _NutrientRow(label: 'Fat', value: food.fatGrams),
-                  _NutrientRow(label: 'Fiber', value: food.fiberGrams),
+                  const SizedBox(height: 14),
+                  Container(
+                    height: 1,
+                    color: colors.outlineVariant.withValues(alpha: 0.2),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() => _expandedNutrients = !_expandedNutrients);
+                    },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'More nutrients',
+                            style: textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          _expandedNutrients
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          color: colors.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_expandedNutrients) ...[
+                    const SizedBox(height: 12),
+                    _NutrientRow(label: 'Fiber', value: food.fiberGrams),
+                    _NutrientRow(label: 'Sugar', value: food.sugarGrams),
+                    _NutrientRow(
+                      label: 'Sodium',
+                      value: food.sodiumMilligrams,
+                      unit: 'mg',
+                    ),
+                    _NutrientRow(
+                      label: 'Sat. Fat',
+                      value: food.saturatedFatGrams,
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   SegmentedButton<_InputMode>(
                     segments: const [
@@ -189,12 +233,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildNutritionPreview(food),
-                  const SizedBox(height: 16),
-                  _MealTargetRow(
-                    mealType: _mealType,
-                    onChanged: _pickMeal,
-                  ),
+                  _MealTargetRow(mealType: _mealType, onChanged: _pickMeal),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     key: const Key('add_search_food_button'),
@@ -228,46 +267,6 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
     );
   }
 
-  double get _effectiveQuantity {
-    final raw = double.tryParse(_quantityController.text) ?? 0;
-    return _inputMode == _InputMode.grams ? raw / 100.0 : raw;
-  }
-
-  Widget _buildNutritionPreview(FoodItem food) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final q = _effectiveQuantity;
-    final kcal = (food.calories * q).round();
-    final p = food.proteinGrams * q;
-    final c = food.carbsGrams * q;
-    final f = food.fatGrams * q;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _PreviewChip(
-          label: '$kcal kcal',
-          color: colors.primary,
-          textTheme: textTheme,
-        ),
-        _PreviewChip(
-          label: 'P ${p.toStringAsFixed(1)}g',
-          color: const Color(0xFFFF9500),
-          textTheme: textTheme,
-        ),
-        _PreviewChip(
-          label: 'C ${c.toStringAsFixed(1)}g',
-          color: const Color(0xFF34C759),
-          textTheme: textTheme,
-        ),
-        _PreviewChip(
-          label: 'F ${f.toStringAsFixed(1)}g',
-          color: const Color(0xFFFF8E80),
-          textTheme: textTheme,
-        ),
-      ],
-    );
-  }
-
   Future<void> _pickMeal() async {
     final next = await showMealPickerSheet(
       context,
@@ -291,9 +290,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Delete entry?'),
-          content: Text(
-            'Remove "${editing.foodItem.name}" from your log?',
-          ),
+          content: Text('Remove "${editing.foodItem.name}" from your log?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -376,43 +373,16 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
   }
 }
 
-class _PreviewChip extends StatelessWidget {
-  const _PreviewChip({
+class _NutrientRow extends StatelessWidget {
+  const _NutrientRow({
     required this.label,
-    required this.color,
-    required this.textTheme,
+    required this.value,
+    this.unit = 'g',
   });
 
   final String label;
-  final Color color;
-  final TextTheme textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          label,
-          style: textTheme.labelMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NutrientRow extends StatelessWidget {
-  const _NutrientRow({required this.label, required this.value});
-
-  final String label;
   final double value;
+  final String unit;
 
   @override
   Widget build(BuildContext context) {
@@ -421,7 +391,7 @@ class _NutrientRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          Text('${value.toStringAsFixed(1)} g'),
+          Text('${value.toStringAsFixed(1)} $unit'),
         ],
       ),
     );

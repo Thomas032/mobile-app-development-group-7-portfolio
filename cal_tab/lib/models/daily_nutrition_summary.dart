@@ -10,6 +10,9 @@ class DailyNutritionSummary {
     required this.carbsConsumedGrams,
     required this.fatConsumedGrams,
     required this.fiberConsumedGrams,
+    this.sugarConsumedGrams = 0,
+    this.sodiumConsumedMilligrams = 0,
+    this.saturatedFatConsumedGrams = 0,
   });
 
   final int calorieGoal;
@@ -19,6 +22,9 @@ class DailyNutritionSummary {
   final double carbsConsumedGrams;
   final double fatConsumedGrams;
   final double fiberConsumedGrams;
+  final double sugarConsumedGrams;
+  final double sodiumConsumedMilligrams;
+  final double saturatedFatConsumedGrams;
 
   int get caloriesLeft => calorieGoal - caloriesConsumed;
   double get calorieProgress => _progress(caloriesConsumed, calorieGoal);
@@ -40,6 +46,9 @@ class DailyNutritionSummary {
     var carbs = 0.0;
     var fat = 0.0;
     var fiber = 0.0;
+    var sugar = 0.0;
+    var sodium = 0.0;
+    var saturatedFat = 0.0;
 
     for (final entry in entries) {
       calories += entry.calories;
@@ -47,6 +56,9 @@ class DailyNutritionSummary {
       carbs += entry.carbsGrams;
       fat += entry.fatGrams;
       fiber += entry.fiberGrams;
+      sugar += entry.sugarGrams;
+      sodium += entry.sodiumMilligrams;
+      saturatedFat += entry.saturatedFatGrams;
     }
 
     return DailyNutritionSummary(
@@ -57,6 +69,9 @@ class DailyNutritionSummary {
       carbsConsumedGrams: carbs,
       fatConsumedGrams: fat,
       fiberConsumedGrams: fiber,
+      sugarConsumedGrams: sugar,
+      sodiumConsumedMilligrams: sodium,
+      saturatedFatConsumedGrams: saturatedFat,
     );
   }
 

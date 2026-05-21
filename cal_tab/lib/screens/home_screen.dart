@@ -64,11 +64,10 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _CalorieGauge(summary: summary),
-                      const SizedBox(height: 24),
-                      const _SectionLabel(text: 'Nutrients'),
-                      const SizedBox(height: 12),
-                      _MacroGrid(summary: summary, profile: profile),
+                      _SwipeableNutritionTile(
+                        summary: summary,
+                        profile: profile,
+                      ),
                       const SizedBox(height: 24),
                       const _SectionLabel(text: 'Meals'),
                       const SizedBox(height: 12),
@@ -84,6 +83,356 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwipeableNutritionTile extends StatefulWidget {
+  const _SwipeableNutritionTile({required this.summary, required this.profile});
+
+  final DailyNutritionSummary summary;
+  final UserProfile profile;
+
+  @override
+  State<_SwipeableNutritionTile> createState() =>
+      _SwipeableNutritionTileState();
+}
+
+class _SwipeableNutritionTileState extends State<_SwipeableNutritionTile> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 212,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: AppCard(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                  child: _MacroView(
+                    summary: widget.summary,
+                    profile: widget.profile,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: AppCard(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                  child: _OtherNutrientView(summary: widget.summary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(2, (index) {
+            final selected = index == _currentPage;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 7,
+              width: selected ? 18 : 7,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: selected
+                    ? colors.primary
+                    : colors.outlineVariant.withValues(alpha: 0.8),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _MacroView extends StatelessWidget {
+  const _MacroView({required this.summary, required this.profile});
+
+  final DailyNutritionSummary summary;
+  final UserProfile profile;
+
+  Color _gaugeColor(BuildContext context, double progress) {
+    if (progress > 1.15) return Theme.of(context).colorScheme.error;
+    if (progress >= 0.85) return Theme.of(context).colorScheme.primary;
+    return const Color(0xFFFF9500);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    final calorieProgress = summary.calorieProgress;
+    final barColor = _gaugeColor(context, calorieProgress);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 102,
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${summary.caloriesConsumed} kcal',
+                    textAlign: TextAlign.center,
+                    style: textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '/ ${summary.calorieGoal}',
+                      style: textTheme.titleSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _CalorieStatusBar(progress: calorieProgress, color: barColor),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MacroMiniTile(
+                label: 'Protein',
+                consumed: summary.proteinConsumedGrams,
+                target: profile.macroTargets.proteinGrams,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MacroMiniTile(
+                label: 'Carbs',
+                consumed: summary.carbsConsumedGrams,
+                target: profile.macroTargets.carbsGrams,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MacroMiniTile(
+                label: 'Fat',
+                consumed: summary.fatConsumedGrams,
+                target: profile.macroTargets.fatGrams,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CalorieStatusBar extends StatelessWidget {
+  const _CalorieStatusBar({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = progress.clamp(0.0, 1.0).toDouble();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: LinearProgressIndicator(
+        value: normalized,
+        minHeight: 10,
+        backgroundColor: color.withValues(alpha: 0.20),
+        valueColor: AlwaysStoppedAnimation<Color>(color),
+      ),
+    );
+  }
+}
+
+class _MacroMiniTile extends StatelessWidget {
+  const _MacroMiniTile({
+    required this.label,
+    required this.consumed,
+    required this.target,
+  });
+
+  final String label;
+  final double consumed;
+  final double target;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    final color = colors.primary;
+    final progress = target <= 0
+        ? 0.0
+        : (consumed / target).clamp(0.0, 1.0).toDouble();
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colors.onSurface,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '${consumed.round()}/${target.round()}g',
+            style: textTheme.labelSmall?.copyWith(
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: color.withValues(alpha: 0.20),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OtherNutrientView extends StatelessWidget {
+  const _OtherNutrientView({required this.summary});
+
+  final DailyNutritionSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final nutrients = [
+      (
+        label: 'Fiber',
+        value: summary.fiberConsumedGrams.toStringAsFixed(1),
+        unit: 'g',
+      ),
+      (
+        label: 'Sugar',
+        value: summary.sugarConsumedGrams.toStringAsFixed(1),
+        unit: 'g',
+      ),
+      (
+        label: 'Sodium',
+        value: summary.sodiumConsumedMilligrams.toStringAsFixed(0),
+        unit: 'mg',
+      ),
+      (
+        label: 'Sat. Fat',
+        value: summary.saturatedFatConsumedGrams.toStringAsFixed(1),
+        unit: 'g',
+      ),
+    ];
+
+    return Column(
+      children: [
+        for (var i = 0; i < nutrients.length; i++) ...[
+          _MicroRow(
+            label: nutrients[i].label,
+            value: nutrients[i].value,
+            unit: nutrients[i].unit,
+          ),
+          if (i != nutrients.length - 1) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _MicroRow extends StatelessWidget {
+  const _MicroRow({
+    required this.label,
+    required this.value,
+    required this.unit,
+  });
+
+  final String label;
+  final String value;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.labelMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$value $unit',
+            style: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -223,100 +572,6 @@ class _PillBadge extends StatelessWidget {
 // ──────────────────────────────────────────
 
 // ──────────────────────────────────────────
-// Calorie gauge
-// ──────────────────────────────────────────
-
-class _CalorieGauge extends StatelessWidget {
-  const _CalorieGauge({required this.summary});
-
-  final DailyNutritionSummary summary;
-
-  Color _gaugeColor(BuildContext context) {
-    final progress = summary.calorieProgress;
-    if (progress > 1.15) return Theme.of(context).colorScheme.error;
-    if (progress >= 0.85) return Theme.of(context).colorScheme.primary;
-    return const Color(0xFFFF9500);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colors = Theme.of(context).colorScheme;
-    final gaugeColor = _gaugeColor(context);
-    final progress = summary.calorieProgress.clamp(0.0, 1.0).toDouble();
-    final percent = (summary.calorieProgress * 100).round();
-
-    return AppCard(
-      child: Center(
-        child: SizedBox.square(
-          dimension: 200,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 18,
-                strokeCap: StrokeCap.round,
-                color: gaugeColor,
-                backgroundColor: gaugeColor.withValues(alpha: 0.12),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${summary.caloriesConsumed}',
-                      key: const Key('calories_consumed_value'),
-                      style: textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '/${summary.calorieGoal} kcal',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _PercentBadge(percent: percent, color: gaugeColor),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PercentBadge extends StatelessWidget {
-  const _PercentBadge({required this.percent, required this.color});
-
-  final int percent;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        '$percent%',
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────
 // Section label
 // ──────────────────────────────────────────
 
@@ -332,137 +587,6 @@ class _SectionLabel extends StatelessWidget {
       style: Theme.of(
         context,
       ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-    );
-  }
-}
-
-// ──────────────────────────────────────────
-// Macro grid
-// ──────────────────────────────────────────
-
-class _MacroGrid extends StatelessWidget {
-  const _MacroGrid({required this.summary, required this.profile});
-
-  final DailyNutritionSummary summary;
-  final UserProfile profile;
-
-  @override
-  Widget build(BuildContext context) {
-    final macros = [
-      (
-        label: 'Protein',
-        consumed: summary.proteinConsumedGrams,
-        target: profile.macroTargets.proteinGrams,
-        color: const Color(0xFFFF9500),
-      ),
-      (
-        label: 'Carbs',
-        consumed: summary.carbsConsumedGrams,
-        target: profile.macroTargets.carbsGrams,
-        color: const Color(0xFF34C759),
-      ),
-      (
-        label: 'Fat',
-        consumed: summary.fatConsumedGrams,
-        target: profile.macroTargets.fatGrams,
-        color: const Color(0xFFFF8E80),
-      ),
-      (
-        label: 'Fiber',
-        consumed: summary.fiberConsumedGrams,
-        target: profile.macroTargets.fiberGrams,
-        color: const Color(0xFF6D7B6B),
-      ),
-    ];
-
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.05,
-      children: [
-        for (final m in macros)
-          _MacroTile(
-            label: m.label,
-            consumed: m.consumed,
-            target: m.target,
-            color: m.color,
-          ),
-      ],
-    );
-  }
-}
-
-class _MacroTile extends StatelessWidget {
-  const _MacroTile({
-    required this.label,
-    required this.consumed,
-    required this.target,
-    required this.color,
-  });
-
-  final String label;
-  final double consumed;
-  final double target;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final progress = target <= 0
-        ? 0.0
-        : (consumed / target).clamp(0.0, 1.0).toDouble();
-    final percentage = (progress * 100).round();
-
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox.square(
-            dimension: 64,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 7,
-                  strokeCap: StrokeCap.round,
-                  color: color,
-                  backgroundColor: color.withValues(alpha: 0.14),
-                ),
-                Center(
-                  child: Text(
-                    '$percentage%',
-                    style: textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: colors.onSurface,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: colors.onSurface,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${consumed.round()}/${target.round()}g',
-            style: textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -649,10 +773,7 @@ class _MealEntryRow extends ConsumerWidget {
           color: colors.errorContainer,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(
-          Icons.delete_outline,
-          color: colors.onErrorContainer,
-        ),
+        child: Icon(Icons.delete_outline, color: colors.onErrorContainer),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -703,9 +824,7 @@ class _MealEntryRow extends ConsumerWidget {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Delete entry?'),
-          content: Text(
-            'Remove "${entry.foodItem.name}" from your log?',
-          ),
+          content: Text('Remove "${entry.foodItem.name}" from your log?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),

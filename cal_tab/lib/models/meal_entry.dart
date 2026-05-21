@@ -21,6 +21,9 @@ class MealEntry {
   double get carbsGrams => foodItem.carbsGrams * quantity;
   double get fatGrams => foodItem.fatGrams * quantity;
   double get fiberGrams => foodItem.fiberGrams * quantity;
+  double get sugarGrams => foodItem.sugarGrams * quantity;
+  double get sodiumMilligrams => foodItem.sodiumMilligrams * quantity;
+  double get saturatedFatGrams => foodItem.saturatedFatGrams * quantity;
 
   MealEntry copyWith({
     String? id,

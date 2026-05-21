@@ -228,6 +228,9 @@ FoodItem? _foodItemFromOpenFoodFacts(Map<String, dynamic> json) {
     carbsGrams: _nutriment(nutriments, 'carbohydrates_100g') ?? 0,
     fatGrams: _nutriment(nutriments, 'fat_100g') ?? 0,
     fiberGrams: _nutriment(nutriments, 'fiber_100g') ?? 0,
+    sugarGrams: _nutriment(nutriments, 'sugars_100g') ?? 0,
+    sodiumMilligrams: _nutriment(nutriments, 'sodium_100g') ?? 0,
+    saturatedFatGrams: _nutriment(nutriments, 'saturated-fat_100g') ?? 0,
     imageUrl:
         json['image_front_url'] as String? ?? json['image_url'] as String?,
   );

@@ -491,10 +491,17 @@ class _CalorieBar extends StatelessWidget {
   }
 }
 
-class _MacroAveragesCard extends StatelessWidget {
+class _MacroAveragesCard extends StatefulWidget {
   const _MacroAveragesCard({required this.snapshot});
 
   final _StatsSnapshot snapshot;
+
+  @override
+  State<_MacroAveragesCard> createState() => _MacroAveragesCardState();
+}
+
+class _MacroAveragesCardState extends State<_MacroAveragesCard> {
+  bool _expandedMicro = false;
 
   @override
   Widget build(BuildContext context) {
@@ -503,27 +510,48 @@ class _MacroAveragesCard extends StatelessWidget {
     final macros = [
       _MacroStat(
         label: 'Protein',
-        average: snapshot.averageProteinGrams,
-        target: snapshot.profile.macroTargets.proteinGrams,
+        average: widget.snapshot.averageProteinGrams,
+        target: widget.snapshot.profile.macroTargets.proteinGrams,
         color: const Color(0xFFFF9500),
       ),
       _MacroStat(
         label: 'Carbs',
-        average: snapshot.averageCarbsGrams,
-        target: snapshot.profile.macroTargets.carbsGrams,
+        average: widget.snapshot.averageCarbsGrams,
+        target: widget.snapshot.profile.macroTargets.carbsGrams,
         color: const Color(0xFF34C759),
       ),
       _MacroStat(
         label: 'Fat',
-        average: snapshot.averageFatGrams,
-        target: snapshot.profile.macroTargets.fatGrams,
+        average: widget.snapshot.averageFatGrams,
+        target: widget.snapshot.profile.macroTargets.fatGrams,
         color: const Color(0xFFFF8E80),
       ),
-      _MacroStat(
+    ];
+
+    final microStats = [
+      _MicroStat(
         label: 'Fiber',
-        average: snapshot.averageFiberGrams,
-        target: snapshot.profile.macroTargets.fiberGrams,
+        average: widget.snapshot.averageFiberGrams,
+        unit: 'g',
         color: const Color(0xFF6D7B6B),
+      ),
+      _MicroStat(
+        label: 'Sugar',
+        average: widget.snapshot.averageSugarGrams,
+        unit: 'g',
+        color: const Color(0xFFFF5252),
+      ),
+      _MicroStat(
+        label: 'Sodium',
+        average: widget.snapshot.averageSodiumMilligrams,
+        unit: 'mg',
+        color: const Color(0xFF536DFE),
+      ),
+      _MicroStat(
+        label: 'Sat. Fat',
+        average: widget.snapshot.averageSaturatedFatGrams,
+        unit: 'g',
+        color: const Color(0xFFFF8E80),
       ),
     ];
 
@@ -537,9 +565,9 @@ class _MacroAveragesCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            snapshot.loggedDays == 0
+            widget.snapshot.loggedDays == 0
                 ? 'Logged-day avg'
-                : 'Across ${snapshot.loggedDays} logged days',
+                : 'Across ${widget.snapshot.loggedDays} logged days',
             style: textTheme.bodySmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -548,6 +576,43 @@ class _MacroAveragesCard extends StatelessWidget {
           for (var i = 0; i < macros.length; i++) ...[
             _MacroAverageRow(stat: macros[i]),
             if (i != macros.length - 1) const SizedBox(height: 14),
+          ],
+          const SizedBox(height: 18),
+          Container(
+            height: 1,
+            color: colors.outlineVariant.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: () {
+              setState(() => _expandedMicro = !_expandedMicro);
+            },
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Micronutrients',
+                    style: textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.primary,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _expandedMicro
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  color: colors.primary,
+                ),
+              ],
+            ),
+          ),
+          if (_expandedMicro) ...[
+            const SizedBox(height: 14),
+            for (var i = 0; i < microStats.length; i++) ...[
+              _MicroAverageRow(stat: microStats[i]),
+              if (i != microStats.length - 1) const SizedBox(height: 12),
+            ],
           ],
         ],
       ),
@@ -566,6 +631,20 @@ class _MacroStat {
   final String label;
   final double average;
   final double target;
+  final Color color;
+}
+
+class _MicroStat {
+  const _MicroStat({
+    required this.label,
+    required this.average,
+    required this.unit,
+    required this.color,
+  });
+
+  final String label;
+  final double average;
+  final String unit;
   final Color color;
 }
 
@@ -613,6 +692,54 @@ class _MacroAverageRow extends StatelessWidget {
             minHeight: 8,
             color: stat.color,
             backgroundColor: stat.color.withValues(alpha: 0.14),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MicroAverageRow extends StatelessWidget {
+  const _MicroAverageRow({required this.stat});
+
+  final _MicroStat stat;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: stat.color.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: stat.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            stat.label,
+            style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Text(
+          '${stat.average.toStringAsFixed(1)}${stat.unit}',
+          style: textTheme.bodySmall?.copyWith(
+            color: stat.color,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -778,6 +905,15 @@ class _StatsSnapshot {
 
   double get averageFiberGrams =>
       _averageLoggedDayMacro((summary) => summary.fiberConsumedGrams);
+
+  double get averageSugarGrams =>
+      _averageLoggedDayMacro((summary) => summary.sugarConsumedGrams);
+
+  double get averageSodiumMilligrams =>
+      _averageLoggedDayMacro((summary) => summary.sodiumConsumedMilligrams);
+
+  double get averageSaturatedFatGrams =>
+      _averageLoggedDayMacro((summary) => summary.saturatedFatConsumedGrams);
 
   Map<MealType, int> get mealDaysLogged {
     return {
