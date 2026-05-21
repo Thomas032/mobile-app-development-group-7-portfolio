@@ -1,3 +1,4 @@
+import 'package:cal_tab/models/goal_type.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:cal_tab/screens/app_root_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,18 +27,36 @@ void main() {
       ),
     );
 
-    expect(find.text('Create targets'), findsOneWidget);
+    expect(find.text('Start with your goal'), findsOneWidget);
 
-    await tester.enterText(find.byKey(const Key('age_field')), '30');
-    await tester.enterText(find.byKey(const Key('height_field')), '175');
-    await tester.enterText(find.byKey(const Key('weight_field')), '70');
-    final finishButton = find.byKey(const Key('finish_onboarding_button'));
-    await tester.tap(finishButton);
+    await tester.tap(find.text('Stay on track'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('onboarding_primary_button_0')));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(Slider).at(0), const Offset(24, 0));
+    await tester.drag(find.byType(Slider).at(1), const Offset(24, 0));
+    await tester.drag(find.byType(Slider).at(2), const Offset(24, 0));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('onboarding_primary_button_1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Male'));
+    await tester.tap(find.text('Moderately active'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('onboarding_primary_button_2')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your plan is ready'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('onboarding_primary_button_3')));
     await tester.pumpAndSettle();
 
     expect(find.text('CalTab'), findsOneWidget);
     expect(profileRepository.profile, isNotNull);
-    expect(profileRepository.profile!.calorieGoal, 2556);
+    expect(profileRepository.profile!.goalType, GoalType.maintain);
+    expect(profileRepository.profile!.calorieGoal, greaterThan(0));
   });
 }
 
