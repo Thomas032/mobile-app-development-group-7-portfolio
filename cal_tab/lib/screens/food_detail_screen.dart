@@ -5,7 +5,7 @@ import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
-import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/food_detail/meal_target_row.dart';
 import 'package:cal_tab/widgets/food_detail/nutrient_row.dart';
 import 'package:cal_tab/widgets/meal_picker_sheet.dart';

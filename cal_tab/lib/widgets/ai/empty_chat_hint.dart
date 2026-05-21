@@ -1,4 +1,4 @@
-import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:flutter/material.dart';
 
 class EmptyChatHint extends StatelessWidget {

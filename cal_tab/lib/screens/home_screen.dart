@@ -1,7 +1,7 @@
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
-import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/home/meal_sections.dart';
 import 'package:cal_tab/widgets/home/swipeable_nutrition_tile.dart';
 import 'package:cal_tab/widgets/home/top_bar.dart';

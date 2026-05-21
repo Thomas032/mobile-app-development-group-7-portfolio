@@ -1,7 +1,7 @@
 import 'package:cal_tab/providers/nutrition_providers.dart';
 import 'package:cal_tab/providers/onboarding_form_provider.dart';
 import 'package:cal_tab/services/nutrition_calculator.dart';
-import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/onboarding/hint_banner.dart';
 import 'package:cal_tab/widgets/onboarding/target_preview_card.dart';
 import 'package:flutter/material.dart';

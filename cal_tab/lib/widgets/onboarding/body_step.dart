@@ -1,6 +1,6 @@
 import 'package:cal_tab/models/gender.dart';
 import 'package:cal_tab/providers/onboarding_form_provider.dart';
-import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/onboarding/slider_card.dart';
 import 'package:cal_tab/widgets/shared/pill_choice.dart';
 import 'package:flutter/material.dart';

@@ -1,6 +1,6 @@
 import 'package:cal_tab/models/daily_nutrition_summary.dart';
 import 'package:cal_tab/models/user_profile.dart';
-import 'package:cal_tab/widgets/app_card.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/home/macro_view.dart';
 import 'package:cal_tab/widgets/home/micronutrient_view.dart';
 import 'package:flutter/material.dart';
