@@ -21,6 +21,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return SafeArea(
       child: ListView(
+        key: const Key('settings_scroll'),
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         children: [
           Text(

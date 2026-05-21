@@ -40,6 +40,17 @@ void main() {
 
     await tester.tap(find.byKey(const Key('settings_tab_button')));
     await tester.pumpAndSettle();
+    // Danger Zone is the 7th section in the settings list — scroll it into view.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('reset_profile_button')),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('settings_scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(find.byKey(const Key('reset_profile_button')), findsOneWidget);
     expect(find.byKey(const Key('clear_food_logs_button')), findsOneWidget);
   });
