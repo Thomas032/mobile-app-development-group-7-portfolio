@@ -97,7 +97,10 @@ void main() {
     await tester.tap(find.text('OK').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('321'), findsOneWidget);
+    final caloriesText = tester.widget<Text>(
+      find.byKey(const Key('calories_consumed_value')),
+    );
+    expect(caloriesText.data, contains('321'));
   });
 
   testWidgets('renders the calendar pager and the main scroll list', (
@@ -110,15 +113,16 @@ void main() {
     expect(find.byType(ListView), findsWidgets);
   });
 
-  testWidgets('shows 0 consumed calories and 0% when no food is logged', (
+  testWidgets('shows 0 consumed calories when no food is logged', (
     tester,
   ) async {
     await tester.pumpWidget(buildScreen());
     await tester.pump();
 
-    expect(find.byKey(const Key('calories_consumed_value')), findsOneWidget);
-    expect(find.text('0'), findsWidgets);
-    expect(find.text('0%'), findsWidgets);
+    final caloriesText = tester.widget<Text>(
+      find.byKey(const Key('calories_consumed_value')),
+    );
+    expect(caloriesText.data, contains('0'));
   });
 
   testWidgets('shows correct consumed calories after logging food', (
@@ -127,7 +131,10 @@ void main() {
     await tester.pumpWidget(buildScreen(entries: [_breakfastEntry]));
     await tester.pump();
 
-    expect(find.text('210'), findsOneWidget); // 2 × 105 kcal banana
+    final caloriesText = tester.widget<Text>(
+      find.byKey(const Key('calories_consumed_value')),
+    );
+    expect(caloriesText.data, contains('210')); // 2 × 105 kcal banana
   });
 
   testWidgets('switches selected calendar date and filters logged meals', (
@@ -144,7 +151,10 @@ void main() {
 
     await tester.tap(find.byKey(Key('calendar_day_${logDateKey(yesterday)}')));
     await tester.pump();
-    expect(find.text('105'), findsOneWidget);
+    final caloriesText = tester.widget<Text>(
+      find.byKey(const Key('calories_consumed_value')),
+    );
+    expect(caloriesText.data, contains('105'));
   });
 
   testWidgets('calendar colors days by calorie goal status', (tester) async {
@@ -217,20 +227,26 @@ void main() {
     );
   });
 
-  testWidgets('renders Nutrients section label', (tester) async {
-    await tester.pumpWidget(buildScreen());
-    await tester.pump();
-
-    expect(find.text('Nutrients'), findsOneWidget);
-  });
-
-  testWidgets('renders all four macro tiles', (tester) async {
+  testWidgets('renders the three macro tiles on the first nutrition page', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildScreen());
     await tester.pump();
 
     expect(find.text('Protein'), findsOneWidget);
     expect(find.text('Carbs'), findsOneWidget);
     expect(find.text('Fat'), findsOneWidget);
+  });
+
+  testWidgets('swiping the nutrition tile reveals the micronutrients page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildScreen());
+    await tester.pump();
+
+    await tester.drag(find.byType(PageView).last, const Offset(-400, 0));
+    await tester.pumpAndSettle();
+
     expect(find.text('Fiber'), findsOneWidget);
   });
 
