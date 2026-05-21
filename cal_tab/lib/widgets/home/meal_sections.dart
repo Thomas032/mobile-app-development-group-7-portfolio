@@ -71,7 +71,7 @@ class _MealSection extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _mealIcon(mealType),
+                    mealType.icon,
                     color: colors.primary,
                     size: 20,
                   ),
@@ -312,13 +312,3 @@ class _AddFoodButton extends StatelessWidget {
   }
 }
 
-IconData _mealIcon(MealType mealType) {
-  return switch (mealType) {
-    MealType.breakfast => Icons.free_breakfast_outlined,
-    MealType.snackMorning => Icons.bakery_dining_outlined,
-    MealType.lunch => Icons.lunch_dining_outlined,
-    MealType.snackAfternoon => Icons.cookie_outlined,
-    MealType.dinner => Icons.dinner_dining_outlined,
-    MealType.secondDinner => Icons.nightlight_outlined,
-  };
-}

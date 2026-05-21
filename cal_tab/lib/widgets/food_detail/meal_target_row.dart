@@ -1,5 +1,4 @@
 import 'package:cal_tab/models/meal_type.dart';
-import 'package:cal_tab/widgets/meal_picker_sheet.dart';
 import 'package:flutter/material.dart';
 
 class MealTargetRow extends StatelessWidget {
@@ -41,7 +40,7 @@ class MealTargetRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      mealTypeLabel(mealType),
+                      mealType.descriptiveLabel,
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),

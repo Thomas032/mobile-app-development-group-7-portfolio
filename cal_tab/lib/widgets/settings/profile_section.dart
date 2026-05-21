@@ -78,7 +78,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
               label: 'Gender',
               value: _gender,
               values: Gender.values,
-              labelFor: _genderLabel,
+              labelFor: (v) => v.label,
               onChanged: (v) => setState(() => _gender = v),
             ),
             const SizedBox(height: 12),
@@ -87,7 +87,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
               label: 'Activity',
               value: _activityLevel,
               values: ActivityLevel.values,
-              labelFor: _activityLabel,
+              labelFor: (v) => v.label,
               onChanged: (v) => setState(() => _activityLevel = v),
             ),
             const SizedBox(height: 12),
@@ -132,23 +132,6 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
       const SnackBar(content: Text('Profile updated. Targets recalculated.')),
     );
   }
-}
-
-String _genderLabel(Gender gender) {
-  return switch (gender) {
-    Gender.male => 'Male',
-    Gender.female => 'Female',
-    Gender.nonSpecified => 'Prefer not to say',
-  };
-}
-
-String _activityLabel(ActivityLevel activityLevel) {
-  return switch (activityLevel) {
-    ActivityLevel.sedentary => 'Sedentary',
-    ActivityLevel.lightlyActive => 'Lightly active',
-    ActivityLevel.moderatelyActive => 'Moderately active',
-    ActivityLevel.veryActive => 'Very active',
-  };
 }
 
 String _goalLabel(GoalType goalType) {

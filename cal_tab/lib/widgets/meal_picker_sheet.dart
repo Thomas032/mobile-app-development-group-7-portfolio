@@ -113,7 +113,7 @@ class _MealPickerRow extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    mealTypeIcon(mealType),
+                    mealType.icon,
                     color: colors.primary,
                     size: 21,
                   ),
@@ -121,7 +121,7 @@ class _MealPickerRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    mealTypeLabel(mealType),
+                    mealType.descriptiveLabel,
                     style: textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -140,24 +140,3 @@ class _MealPickerRow extends StatelessWidget {
   }
 }
 
-String mealTypeLabel(MealType mealType) {
-  return switch (mealType) {
-    MealType.breakfast => 'Breakfast',
-    MealType.snackMorning => 'Morning snack',
-    MealType.lunch => 'Lunch',
-    MealType.snackAfternoon => 'Afternoon snack',
-    MealType.dinner => 'Dinner',
-    MealType.secondDinner => 'Second dinner',
-  };
-}
-
-IconData mealTypeIcon(MealType mealType) {
-  return switch (mealType) {
-    MealType.breakfast => Icons.free_breakfast_outlined,
-    MealType.snackMorning => Icons.bakery_dining_outlined,
-    MealType.lunch => Icons.lunch_dining_outlined,
-    MealType.snackAfternoon => Icons.cookie_outlined,
-    MealType.dinner => Icons.dinner_dining_outlined,
-    MealType.secondDinner => Icons.nightlight_outlined,
-  };
-}

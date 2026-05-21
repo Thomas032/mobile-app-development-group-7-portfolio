@@ -51,7 +51,7 @@ class ExerciseLevelStep extends ConsumerWidget {
                     key: Key('activity_${item.name}_card'),
                     selected: selected == item,
                     compact: true,
-                    title: _activityLabel(item),
+                    title: item.label,
                     subtitle: _activitySubtitle(item),
                     icon: _activityIcon(item),
                     onTap: () => controller.setActivityLevel(item),
@@ -66,15 +66,6 @@ class ExerciseLevelStep extends ConsumerWidget {
       ),
     );
   }
-}
-
-String _activityLabel(ActivityLevel activityLevel) {
-  return switch (activityLevel) {
-    ActivityLevel.sedentary => 'Sedentary',
-    ActivityLevel.lightlyActive => 'Lightly active',
-    ActivityLevel.moderatelyActive => 'Moderately active',
-    ActivityLevel.veryActive => 'Very active',
-  };
 }
 
 String _activitySubtitle(ActivityLevel activityLevel) {

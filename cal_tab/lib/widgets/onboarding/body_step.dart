@@ -50,7 +50,7 @@ class BodyStep extends ConsumerWidget {
                   for (final item in Gender.values) ...[
                     PillChoice(
                       key: Key('gender_${item.name}_pill'),
-                      label: _genderLabel(item),
+                      label: item.label,
                       selected: state.gender == item,
                       onTap: () => controller.setGender(item),
                     ),
@@ -102,10 +102,3 @@ class BodyStep extends ConsumerWidget {
   }
 }
 
-String _genderLabel(Gender gender) {
-  return switch (gender) {
-    Gender.male => 'Male',
-    Gender.female => 'Female',
-    Gender.nonSpecified => 'Prefer not to say',
-  };
-}
