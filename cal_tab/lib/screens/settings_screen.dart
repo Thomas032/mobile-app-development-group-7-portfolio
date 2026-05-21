@@ -247,21 +247,36 @@ class _TargetsSection extends ConsumerStatefulWidget {
 
 class _TargetsSectionState extends ConsumerState<_TargetsSection> {
   final _formKey = GlobalKey<FormState>();
-  late final _calorieController = TextEditingController(
+  late final TextEditingController _calorieController = TextEditingController(
     text: '${widget.profile.calorieGoal}',
   );
-  late final _proteinController = TextEditingController(
+  late final TextEditingController _proteinController = TextEditingController(
     text: _format(widget.profile.macroTargets.proteinGrams),
   );
-  late final _carbsController = TextEditingController(
+  late final TextEditingController _carbsController = TextEditingController(
     text: _format(widget.profile.macroTargets.carbsGrams),
   );
-  late final _fatController = TextEditingController(
+  late final TextEditingController _fatController = TextEditingController(
     text: _format(widget.profile.macroTargets.fatGrams),
   );
-  late final _fiberController = TextEditingController(
+  late final TextEditingController _fiberController = TextEditingController(
     text: _format(widget.profile.macroTargets.fiberGrams),
   );
+
+  @override
+  void didUpdateWidget(covariant _TargetsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.profile == widget.profile) {
+      return;
+    }
+
+    _calorieController.text = '${widget.profile.calorieGoal}';
+    _proteinController.text = _format(widget.profile.macroTargets.proteinGrams);
+    _carbsController.text = _format(widget.profile.macroTargets.carbsGrams);
+    _fatController.text = _format(widget.profile.macroTargets.fatGrams);
+    _fiberController.text = _format(widget.profile.macroTargets.fiberGrams);
+  }
 
   @override
   void dispose() {
