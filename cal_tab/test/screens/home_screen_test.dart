@@ -10,7 +10,7 @@ import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/screens/home_screen.dart';
-import 'package:cal_tab/widgets/log_calendar.dart';
+import 'package:cal_tab/widgets/home/log_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

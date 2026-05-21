@@ -8,7 +8,7 @@ import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/food_detail/meal_target_row.dart';
 import 'package:cal_tab/widgets/food_detail/nutrient_row.dart';
-import 'package:cal_tab/widgets/meal_picker_sheet.dart';
+import 'package:cal_tab/widgets/food_detail/meal_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

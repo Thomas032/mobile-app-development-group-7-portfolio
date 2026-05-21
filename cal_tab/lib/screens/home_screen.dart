@@ -5,7 +5,7 @@ import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:cal_tab/widgets/home/meal_sections.dart';
 import 'package:cal_tab/widgets/home/swipeable_nutrition_tile.dart';
 import 'package:cal_tab/widgets/home/top_bar.dart';
-import 'package:cal_tab/widgets/log_calendar.dart';
+import 'package:cal_tab/widgets/home/log_calendar.dart';
 import 'package:cal_tab/widgets/shared/section_label.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
