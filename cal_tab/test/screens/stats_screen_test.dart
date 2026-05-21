@@ -83,7 +83,12 @@ void main() {
     expect(find.text('75/126g'), findsOneWidget);
     expect(find.text('195/260g'), findsOneWidget);
     expect(find.text('45/63g'), findsOneWidget);
-    expect(find.text('23/30g'), findsOneWidget);
+
+    // Fiber lives in the collapsible micronutrient section; expand it and
+    // assert on the MicroAverageRow format (no target shown).
+    await tester.tap(find.text('Micronutrients'));
+    await tester.pumpAndSettle();
+    expect(find.text('22.5g'), findsOneWidget); // (30 + 15) / 2 days logged
   });
 
   testWidgets('meal rhythm counts unique logged days per meal type', (
