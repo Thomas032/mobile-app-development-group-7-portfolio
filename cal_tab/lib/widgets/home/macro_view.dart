@@ -43,6 +43,7 @@ class MacroView extends StatelessWidget {
                 children: [
                   Text(
                     '${summary.caloriesConsumed} kcal',
+                    key: const Key('calories_consumed_value'),
                     textAlign: TextAlign.center,
                     style: textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.w800,
