@@ -5,8 +5,10 @@ import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
-import 'package:cal_tab/widgets/app_card.dart';
-import 'package:cal_tab/widgets/meal_picker_sheet.dart';
+import 'package:cal_tab/widgets/shared/app_card.dart';
+import 'package:cal_tab/widgets/food_detail/meal_target_row.dart';
+import 'package:cal_tab/widgets/food_detail/nutrient_row.dart';
+import 'package:cal_tab/widgets/food_detail/meal_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -145,9 +147,9 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _NutrientRow(label: 'Protein', value: food.proteinGrams),
-                  _NutrientRow(label: 'Carbs', value: food.carbsGrams),
-                  _NutrientRow(label: 'Fat', value: food.fatGrams),
+                  NutrientRow(label: 'Protein', value: food.proteinGrams),
+                  NutrientRow(label: 'Carbs', value: food.carbsGrams),
+                  NutrientRow(label: 'Fat', value: food.fatGrams),
                   const SizedBox(height: 14),
                   Container(
                     height: 1,
@@ -180,14 +182,14 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                   ),
                   if (_expandedNutrients) ...[
                     const SizedBox(height: 12),
-                    _NutrientRow(label: 'Fiber', value: food.fiberGrams),
-                    _NutrientRow(label: 'Sugar', value: food.sugarGrams),
-                    _NutrientRow(
+                    NutrientRow(label: 'Fiber', value: food.fiberGrams),
+                    NutrientRow(label: 'Sugar', value: food.sugarGrams),
+                    NutrientRow(
                       label: 'Sodium',
                       value: food.sodiumMilligrams,
                       unit: 'mg',
                     ),
-                    _NutrientRow(
+                    NutrientRow(
                       label: 'Sat. Fat',
                       value: food.saturatedFatGrams,
                     ),
@@ -226,14 +228,14 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                           : 'Portions',
                       suffixText: _inputMode == _InputMode.grams
                           ? 'g'
-                          : '× 100g',
+                          : '× 100g',
                     ),
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _MealTargetRow(mealType: _mealType, onChanged: _pickMeal),
+                  MealTargetRow(mealType: _mealType, onChanged: _pickMeal),
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     key: const Key('add_search_food_button'),
@@ -369,87 +371,6 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
       now.second,
       now.millisecond,
       now.microsecond,
-    );
-  }
-}
-
-class _NutrientRow extends StatelessWidget {
-  const _NutrientRow({
-    required this.label,
-    required this.value,
-    this.unit = 'g',
-  });
-
-  final String label;
-  final double value;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          Text('${value.toStringAsFixed(1)} $unit'),
-        ],
-      ),
-    );
-  }
-}
-
-class _MealTargetRow extends StatelessWidget {
-  const _MealTargetRow({required this.mealType, required this.onChanged});
-
-  final MealType mealType;
-  final Future<void> Function() onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Material(
-      color: colors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        key: const Key('detail_meal_target'),
-        borderRadius: BorderRadius.circular(18),
-        onTap: onChanged,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.restaurant_menu_rounded, color: colors.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Meal',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    Text(
-                      mealTypeLabel(mealType),
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.edit_outlined,
-                color: colors.onSurfaceVariant,
-                size: 18,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

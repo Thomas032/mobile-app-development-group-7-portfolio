@@ -27,22 +27,25 @@ void main() {
       ),
     );
 
-    expect(find.text('Start with your goal'), findsOneWidget);
+    expect(find.text('What\'s your goal?'), findsOneWidget);
 
+    // Step 0 — goal
     await tester.tap(find.text('Stay on track'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('onboarding_primary_button_0')));
     await tester.pumpAndSettle();
 
+    // Step 1 — body: sliders + gender (gender lives in BodyStep now)
     await tester.drag(find.byType(Slider).at(0), const Offset(24, 0));
     await tester.drag(find.byType(Slider).at(1), const Offset(24, 0));
     await tester.drag(find.byType(Slider).at(2), const Offset(24, 0));
+    await tester.tap(find.text('Male'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('onboarding_primary_button_1')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Male'));
+    // Step 2 — exercise level
     await tester.tap(find.text('Moderately active'));
     await tester.pumpAndSettle();
 

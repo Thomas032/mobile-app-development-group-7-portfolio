@@ -2,7 +2,7 @@ import 'package:cal_tab/app/router.dart';
 import 'package:cal_tab/app/theme.dart';
 import 'package:cal_tab/models/app_settings.dart';
 import 'package:cal_tab/providers/app_settings_provider.dart';
-import 'package:cal_tab/widgets/app_startup_gate.dart';
+import 'package:cal_tab/app/app_startup_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

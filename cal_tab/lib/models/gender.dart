@@ -3,6 +3,14 @@ enum Gender {
   female,
   nonSpecified;
 
+  String get label {
+    return switch (this) {
+      Gender.male => 'Male',
+      Gender.female => 'Female',
+      Gender.nonSpecified => 'Prefer not to say',
+    };
+  }
+
   int get bmrConstant {
     return switch (this) {
       Gender.male => 5,

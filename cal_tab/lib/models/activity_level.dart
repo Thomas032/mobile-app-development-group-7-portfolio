@@ -4,6 +4,15 @@ enum ActivityLevel {
   moderatelyActive,
   veryActive;
 
+  String get label {
+    return switch (this) {
+      ActivityLevel.sedentary => 'Sedentary',
+      ActivityLevel.lightlyActive => 'Lightly active',
+      ActivityLevel.moderatelyActive => 'Moderately active',
+      ActivityLevel.veryActive => 'Very active',
+    };
+  }
+
   double get multiplier {
     return switch (this) {
       ActivityLevel.sedentary => 1.2,
