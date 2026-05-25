@@ -2,7 +2,7 @@
 
 A privacy-first calorie and macro tracker built with Flutter. All user data — profile, food log, settings — lives on the device via `shared_preferences`; only food searches and (optionally) AI features hit the network. Foods come from the [Open Food Facts](https://world.openfoodfacts.org) API, and an optional Gemini integration powers an in-app assistant and Snap2Cal (photo → estimated nutrition).
 
-CalTab is the group project for the *Mobile Applications* module (THWS / TAMK, 2026).
+CalTab is the group project for the _Mobile Applications_ module (THWS / TAMK, 2026).
 
 ## Features
 
@@ -62,21 +62,19 @@ State is managed with **Riverpod 3** (`AsyncNotifier` for async flows, `Notifier
 
 ## Main packages
 
-| Package | Why |
-|---|---|
-| `flutter_riverpod` | State management — async notifiers for data fetching, sync notifiers for settings/profile. |
-| `go_router` | Declarative named routing; type-safe extras for the food-detail flow. |
-| `http` | Open Food Facts REST calls. |
-| `shared_preferences` | Local persistence for profile, meals, and settings. |
-| `flutter_secure_storage` | Stores the Gemini API key off-disk-plaintext. |
-| `camera`, `google_mlkit_barcode_scanning` | Barcode scanning. |
-| `image_picker`, `google_generative_ai` | Snap2Cal photo flow and AI assistant. |
-| `file_picker` | Backup import file selection. |
-| `flutter_markdown_plus` | Renders AI assistant replies as Markdown. |
+| Package                                   | Why                                                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `flutter_riverpod`                        | State management — async notifiers for data fetching, sync notifiers for settings/profile. |
+| `go_router`                               | Declarative named routing; type-safe extras for the food-detail flow.                      |
+| `http`                                    | Open Food Facts REST calls.                                                                |
+| `shared_preferences`                      | Local persistence for profile, meals, and settings.                                        |
+| `flutter_secure_storage`                  | Stores the Gemini API key off-disk-plaintext.                                              |
+| `camera`, `google_mlkit_barcode_scanning` | Barcode scanning.                                                                          |
+| `image_picker`, `google_generative_ai`    | Snap2Cal photo flow and AI assistant.                                                      |
+| `file_picker`                             | Backup import file selection.                                                              |
+| `flutter_markdown_plus`                   | Renders AI assistant replies as Markdown.                                                  |
 
-## Screenshots
-
-_Place runtime screenshots in `docs/screenshots/` and reference them here before submission._
+## Screenshot
 
 ![Home screen](docs/screenshots/home.png)
 
