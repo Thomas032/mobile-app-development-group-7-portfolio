@@ -32,8 +32,9 @@ class OnboardingFormState {
   final bool isSaving;
 
   bool get canContinueGoals => goalType != null;
-  bool get canContinueBody => ageTouched && heightTouched && weightTouched;
-  bool get canContinueLifestyle => gender != null && activityLevel != null;
+  bool get canContinueBody =>
+      gender != null && ageTouched && heightTouched && weightTouched;
+  bool get canContinueLifestyle => activityLevel != null;
   bool get canFinish =>
       canContinueGoals && canContinueBody && canContinueLifestyle;
 

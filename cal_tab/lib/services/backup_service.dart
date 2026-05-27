@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cal_tab/models/app_settings.dart';
+import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/user_profile.dart';
 
@@ -13,6 +14,7 @@ class BackupService {
   static String exportBackup({
     required UserProfile? userProfile,
     required List<MealEntry> meals,
+    required List<FoodItem> customMeals,
     required AppSettings settings,
   }) {
     final backup = {
@@ -20,6 +22,7 @@ class BackupService {
       'exportedAt': DateTime.now().toIso8601String(),
       'userProfile': userProfile?.toJson(),
       'meals': meals.map((meal) => meal.toJson()).toList(),
+      'customMeals': customMeals.map((meal) => meal.toJson()).toList(),
       'settings': settings.toJson(),
     };
 
@@ -28,7 +31,7 @@ class BackupService {
 
   /// Parses a backup JSON string and returns the extracted data
   ///
-  /// Returns a map with keys: 'userProfile', 'meals', 'settings'
+  /// Returns a map with keys: 'userProfile', 'meals', 'customMeals', 'settings'
   /// Returns null values for missing data
   static Map<String, dynamic>? importBackup(String backupJson) {
     try {
@@ -56,6 +59,15 @@ class BackupService {
             .toList();
       }
 
+      List<FoodItem> customMeals = [];
+      if (decoded['customMeals'] != null) {
+        final customMealsList = decoded['customMeals'] as List<dynamic>;
+        customMeals = customMealsList
+            .cast<Map<String, dynamic>>()
+            .map(FoodItem.fromJson)
+            .toList();
+      }
+
       AppSettings settings = const AppSettings();
       if (decoded['settings'] != null) {
         settings = AppSettings.fromJson(
@@ -63,7 +75,12 @@ class BackupService {
         );
       }
 
-      return {'userProfile': userProfile, 'meals': meals, 'settings': settings};
+      return {
+        'userProfile': userProfile,
+        'meals': meals,
+        'customMeals': customMeals,
+        'settings': settings,
+      };
     } catch (e) {
       return null;
     }

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/providers/ai_api_key_provider.dart';
+import 'package:cal_tab/providers/custom_meals_provider.dart';
 import 'package:cal_tab/providers/food_search_provider.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
 import 'package:cal_tab/services/gemini_ai_service.dart';
@@ -62,6 +64,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(foodSearchControllerProvider);
+    final customMeals = ref.watch(customMealsControllerProvider);
     final selectedDate = ref.watch(selectedLogDateProvider);
     final target = (widget.target ?? FoodLogTarget(date: selectedDate))
         .normalized();
@@ -81,6 +84,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                 onBarcode: () =>
                     context.pushNamed('scan-barcode', extra: target),
                 onSnap2Cal: () => _handleSnap2Cal(target),
+                onCreateCustomMeal: () => _handleCreateCustomMeal(target),
               ),
             ),
             Padding(
@@ -97,6 +101,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                 data: (state) => FoodResultsList(
                   state: state,
                   target: target,
+                  customMeals: customMeals.asData?.value ?? const [],
                   onLoadMore: () async => ref
                       .read(foodSearchControllerProvider.notifier)
                       .loadMore(),
@@ -187,6 +192,27 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
       navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text('Snap2Cal failed: $e')));
     }
+  }
+
+  Future<void> _handleCreateCustomMeal(FoodLogTarget target) async {
+    final createdMeal = await context.pushNamed<FoodItem>('custom-meal');
+    if (!mounted || createdMeal == null) {
+      return;
+    }
+
+    if (_searchController.text.isNotEmpty) {
+      _searchController.clear();
+      await _runSearch(force: true);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    context.pushNamed(
+      'food-detail',
+      extra: FoodDetailRouteArgs(foodItem: createdMeal, target: target),
+    );
   }
 
   Future<XFile?> _pickPhoto(ScaffoldMessengerState messenger) async {

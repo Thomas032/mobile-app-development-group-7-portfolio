@@ -12,11 +12,13 @@ class FoodResultsList extends ConsumerStatefulWidget {
     super.key,
     required this.state,
     required this.target,
+    required this.customMeals,
     required this.onLoadMore,
   });
 
   final FoodSearchState state;
   final FoodLogTarget target;
+  final List<FoodItem> customMeals;
   final Future<void> Function() onLoadMore;
 
   @override
@@ -52,24 +54,30 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final customMeals = _matchingRecents(widget.customMeals, state.query);
     final recents = _matchingRecents(
       ref.watch(recentFoodItemsProvider),
       state.query,
     );
-    final recentIds = recents.map((item) => item.id).toSet();
+    final blockedIds = {
+      ...customMeals.map((item) => item.id),
+      ...recents.map((item) => item.id),
+    };
     final apiItems = [
       for (final item in state.items)
-        if (!recentIds.contains(item.id)) item,
+        if (!blockedIds.contains(item.id)) item,
     ];
 
-    if (recents.isEmpty && apiItems.isEmpty) {
+    if (customMeals.isEmpty && recents.isEmpty && apiItems.isEmpty) {
       return const EmptyResultsState();
     }
 
-    final showApiHeader = recents.isNotEmpty && apiItems.isNotEmpty;
-    final apiHeaderCount = showApiHeader ? 1 : 0;
+    final customHeaderCount = customMeals.isNotEmpty ? 1 : 0;
     final recentHeaderCount = recents.isNotEmpty ? 1 : 0;
+    final apiHeaderCount = apiItems.isNotEmpty ? 1 : 0;
     final totalCount =
+        customHeaderCount +
+        customMeals.length +
         recentHeaderCount +
         recents.length +
         apiHeaderCount +
@@ -83,6 +91,23 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
       itemCount: totalCount,
       itemBuilder: (context, index) {
         var cursor = index;
+
+        if (customHeaderCount == 1) {
+          if (cursor == 0) {
+            return const _SectionHeader(label: 'Custom meals');
+          }
+          cursor -= 1;
+
+          if (cursor < customMeals.length) {
+            return FoodSearchResultTile(
+              foodItem: customMeals[cursor],
+              target: widget.target,
+              isFirst: cursor == 0,
+              isLast: cursor == customMeals.length - 1,
+            );
+          }
+          cursor -= customMeals.length;
+        }
 
         if (recentHeaderCount == 1) {
           if (cursor == 0) {
