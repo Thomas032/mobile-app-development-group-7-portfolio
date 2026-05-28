@@ -44,6 +44,15 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(profileSetupControllerProvider, (previous, next) {
+      final newWeight = next.profile?.weightKg;
+      if (newWeight == null) return;
+      final formatted = newWeight.toStringAsFixed(1);
+      if (_weightController.text != formatted) {
+        _weightController.text = formatted;
+      }
+    });
+
     return SectionCard(
       title: 'Profile (recalculates targets)',
       icon: Icons.person_outline,
