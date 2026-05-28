@@ -86,6 +86,8 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: searchState.when(
+                skipLoadingOnRefresh: true,
+                skipError: true,
                 data: ResultsSummary.new,
                 loading: () => const ResultsSummary.loading(),
                 error: (_, _) => const ResultsSummary.error(),
@@ -94,6 +96,8 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
             const SizedBox(height: 8),
             Expanded(
               child: searchState.when(
+                skipLoadingOnRefresh: true,
+                skipError: true,
                 data: (state) => FoodResultsList(
                   state: state,
                   target: target,

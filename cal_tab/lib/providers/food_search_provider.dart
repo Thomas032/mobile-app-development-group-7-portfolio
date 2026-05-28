@@ -44,6 +44,7 @@ class FoodSearchState {
 
 class FoodSearchController extends AsyncNotifier<FoodSearchState> {
   static const int _pageSize = 20;
+  int _searchGeneration = 0;
 
   @override
   Future<FoodSearchState> build() {
@@ -52,10 +53,20 @@ class FoodSearchController extends AsyncNotifier<FoodSearchState> {
 
   Future<void> search(String query) async {
     final trimmedQuery = query.trim();
-    state = const AsyncLoading<FoodSearchState>();
-    state = await AsyncValue.guard(() async {
-      return _fetchFirstPage(trimmedQuery);
-    });
+    final generation = ++_searchGeneration;
+    // Carry previous data into the loading state so the list stays visible
+    // while the request is in-flight instead of switching to a spinner.
+    state = const AsyncLoading<FoodSearchState>().copyWithPrevious(state);
+    final result = await AsyncValue.guard(() => _fetchFirstPage(trimmedQuery));
+    // Discard results that belong to a superseded search.
+    if (_searchGeneration == generation) {
+      // On transient failure, preserve previous data so the UI never blanks out.
+      // The error widget is only shown on first-load failures (no previous data).
+      state = switch (result) {
+        AsyncError() => result.copyWithPrevious(state),
+        _ => result,
+      };
+    }
   }
 
   Future<void> browseAll() => search('');

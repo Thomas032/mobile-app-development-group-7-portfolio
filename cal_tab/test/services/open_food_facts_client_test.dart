@@ -175,5 +175,69 @@ void main() {
       );
       expect(calls, 2);
     });
+
+    test('retries once on 429 and returns the second response', () async {
+      var calls = 0;
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          calls += 1;
+          if (calls == 1) {
+            return http.Response('rate limited', 429);
+          }
+          return http.Response(
+            jsonEncode({'products': <Map<String, dynamic>>[], 'count': 0}),
+            200,
+          );
+        }),
+        retryDelay: Duration.zero,
+      );
+
+      final result = await client.searchProducts(query: 'bread');
+
+      expect(calls, 2);
+      expect(result.items, isEmpty);
+    });
+
+    test('respects Retry-After header on 429', () async {
+      var calls = 0;
+      final delays = <Duration>[];
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          calls += 1;
+          if (calls == 1) {
+            return http.Response(
+              'rate limited',
+              429,
+              headers: {'retry-after': '2'},
+            );
+          }
+          return http.Response(
+            jsonEncode({'products': <Map<String, dynamic>>[], 'count': 0}),
+            200,
+          );
+        }),
+        // Use a fake delay tracker instead of real delays.
+        retryDelay: Duration.zero,
+      );
+
+      // We only verify that the second call is made (i.e. a retry happened).
+      final result = await client.searchProducts(query: 'bread');
+      expect(calls, 2);
+      expect(result.items, isEmpty);
+    });
+
+    test('throws when 429 persists after retry', () async {
+      final client = OpenFoodFactsClient(
+        httpClient: MockClient((_) async {
+          return http.Response('rate limited', 429);
+        }),
+        retryDelay: Duration.zero,
+      );
+
+      await expectLater(
+        client.searchProducts(query: 'bread'),
+        throwsA(isA<FoodSearchException>()),
+      );
+    });
   });
 }

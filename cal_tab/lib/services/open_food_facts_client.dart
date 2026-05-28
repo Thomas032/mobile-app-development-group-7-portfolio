@@ -144,9 +144,9 @@ class OpenFoodFactsClient {
   }
 
   /// Performs a GET with one automatic retry on transient failures
-  /// (5xx, socket errors, timeouts). Open Food Facts' public endpoints
-  /// occasionally drop requests on common search terms, so a single retry
-  /// after a short delay smooths over the bumps without hiding real errors.
+  /// (429, 5xx, socket errors, timeouts). Open Food Facts' public endpoints
+  /// occasionally drop requests or rate-limit them, so a single retry after a
+  /// short delay smooths over the bumps without hiding real errors.
   Future<http.Response> _getWithRetry(Uri uri) async {
     const headers = {
       HttpHeaders.acceptHeader: 'application/json',
@@ -158,6 +158,12 @@ class OpenFoodFactsClient {
 
     try {
       final response = await attempt();
+      if (response.statusCode == 429) {
+        // Rate-limited: respect Retry-After if present, otherwise back off 1 s.
+        final delay = _retryAfterDelay(response) ?? const Duration(seconds: 1);
+        await Future<void>.delayed(delay);
+        return attempt();
+      }
       if (_isTransientStatus(response.statusCode)) {
         await Future<void>.delayed(_retryDelay);
         return attempt();
@@ -178,6 +184,16 @@ class OpenFoodFactsClient {
 
 bool _isTransientStatus(int statusCode) {
   return statusCode >= 500 && statusCode <= 599;
+}
+
+/// Parses the `Retry-After` response header into a [Duration].
+/// Returns `null` when the header is absent or cannot be parsed.
+Duration? _retryAfterDelay(http.Response response) {
+  final value = response.headers['retry-after'];
+  if (value == null) return null;
+  final seconds = int.tryParse(value.trim());
+  if (seconds != null) return Duration(seconds: seconds);
+  return null;
 }
 
 Map<String, dynamic> _decodeObject(
