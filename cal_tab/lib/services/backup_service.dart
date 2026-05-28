@@ -9,7 +9,7 @@ import 'package:cal_tab/models/user_profile.dart';
 /// Service for exporting and importing user data backups
 class BackupService {
   /// Backup file format version for compatibility checks
-  static const String formatVersion = '1.0';
+  static const String formatVersion = '1.1';
 
   /// Creates a backup JSON string from all user data
   static String exportBackup({
