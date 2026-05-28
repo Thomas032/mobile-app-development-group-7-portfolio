@@ -1,4 +1,5 @@
 import 'package:cal_tab/models/activity_level.dart';
+import 'package:cal_tab/models/body_progress_entry.dart';
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/gender.dart';
@@ -7,6 +8,7 @@ import 'package:cal_tab/models/macro_targets.dart';
 import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
 import 'package:cal_tab/models/user_profile.dart';
+import 'package:cal_tab/providers/body_progress_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/screens/stats_screen.dart';
 import 'package:flutter/material.dart';
@@ -14,11 +16,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Widget buildScreen({List<MealEntry> entries = const []}) {
+  Widget buildScreen({
+    List<MealEntry> entries = const [],
+    List<BodyProgressEntry> bodyProgressEntries = const [],
+  }) {
     return ProviderScope(
       overrides: [
         dailyLogControllerProvider.overrideWith(
           () => _SeedableLogController(entries),
+        ),
+        bodyProgressControllerProvider.overrideWith(
+          () => _SeedableBodyProgressController(bodyProgressEntries),
         ),
       ],
       child: const MaterialApp(
@@ -36,10 +44,11 @@ void main() {
     expect(find.text('Daily calories'), findsOneWidget);
     expect(find.text('Target 2200'), findsOneWidget);
 
-    await _scrollStatsUntilVisible(tester, find.text('Meal rhythm'));
+    await _scrollStatsUntilVisible(tester, find.text('Body Progress'));
 
     expect(find.text('Macro averages'), findsOneWidget);
     expect(find.text('Meal rhythm'), findsOneWidget);
+    expect(find.text('Body Progress'), findsOneWidget);
   });
 
   testWidgets('summarizes weekly calories and logged-day macro averages', (
@@ -123,9 +132,46 @@ void main() {
     expect(breakfastProgress.value, closeTo(1 / 7, 0.001));
     expect(lunchProgress.value, closeTo(1 / 7, 0.001));
   });
+
+  testWidgets('renders current weight and progress history entries', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildScreen(
+        bodyProgressEntries: [
+          BodyProgressEntry(
+            id: 'progress-2',
+            date: DateTime(2026, 5, 21),
+            weightKg: 69.8,
+            waistCm: 80,
+            note: 'Nice drop',
+          ),
+          BodyProgressEntry(
+            id: 'progress-1',
+            date: DateTime(2026, 5, 18),
+            weightKg: 70.4,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await _scrollStatsUntilVisible(
+      tester,
+      find.byKey(const Key('body_progress_current_weight')),
+    );
+
+    expect(find.text('Current weight'), findsOneWidget);
+    expect(find.text('69.8'), findsOneWidget);
+    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Nice drop'), findsOneWidget);
+  });
 }
 
-Future<void> _scrollStatsUntilVisible(WidgetTester tester, Finder finder) async {
+Future<void> _scrollStatsUntilVisible(
+  WidgetTester tester,
+  Finder finder,
+) async {
   final mainScrollable = find
       .descendant(
         of: find.byKey(const Key('stats_main_scroll')),
@@ -149,6 +195,15 @@ class _SeedableLogController extends DailyLogController {
 
   @override
   DailyLogState build() => DailyLogState(entries: _initialEntries);
+}
+
+class _SeedableBodyProgressController extends BodyProgressController {
+  _SeedableBodyProgressController(this._initialEntries);
+
+  final List<BodyProgressEntry> _initialEntries;
+
+  @override
+  Future<List<BodyProgressEntry>> build() async => _initialEntries;
 }
 
 const _profile = UserProfile(

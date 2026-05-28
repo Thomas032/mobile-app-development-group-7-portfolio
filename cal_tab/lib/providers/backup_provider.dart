@@ -1,4 +1,5 @@
 import 'package:cal_tab/providers/app_settings_provider.dart';
+import 'package:cal_tab/providers/body_progress_provider.dart';
 import 'package:cal_tab/providers/custom_meals_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
@@ -22,17 +23,22 @@ class BackupController extends Notifier<BackupState> {
       final profiles = await ref.read(userProfileRepositoryProvider.future);
       final meals = await ref.read(mealLogRepositoryProvider.future);
       final customMeals = await ref.read(customMealRepositoryProvider.future);
+      final bodyProgress = await ref.read(
+        bodyProgressRepositoryProvider.future,
+      );
       final settings = await ref.read(appSettingsRepositoryProvider.future);
 
       final userProfile = await profiles.loadProfile();
       final mealEntries = await meals.loadEntries();
       final savedCustomMeals = await customMeals.loadMeals();
+      final savedBodyProgress = await bodyProgress.loadEntries();
       final appSettings = await settings.loadSettings();
 
       final backupJson = BackupService.exportBackup(
         userProfile: userProfile,
         meals: mealEntries,
         customMeals: savedCustomMeals,
+        bodyProgressEntries: savedBodyProgress,
         settings: appSettings,
       );
 
@@ -59,6 +65,9 @@ class BackupController extends Notifier<BackupState> {
       final profiles = await ref.read(userProfileRepositoryProvider.future);
       final meals = await ref.read(mealLogRepositoryProvider.future);
       final customMeals = await ref.read(customMealRepositoryProvider.future);
+      final bodyProgress = await ref.read(
+        bodyProgressRepositoryProvider.future,
+      );
       final settings = await ref.read(appSettingsRepositoryProvider.future);
 
       // Save imported data to repositories
@@ -72,6 +81,10 @@ class BackupController extends Notifier<BackupState> {
 
       if (backupData['customMeals'] != null) {
         await customMeals.saveMeals(backupData['customMeals']);
+      }
+
+      if (backupData['bodyProgressEntries'] != null) {
+        await bodyProgress.saveEntries(backupData['bodyProgressEntries']);
       }
 
       if (backupData['settings'] != null) {
@@ -103,6 +116,13 @@ class BackupController extends Notifier<BackupState> {
         await ref
             .read(customMealsControllerProvider.notifier)
             .replaceMeals(backupData['customMeals']);
+      }
+
+      if (backupData['bodyProgressEntries'] != null &&
+          backupData['bodyProgressEntries'] is List) {
+        await ref
+            .read(bodyProgressControllerProvider.notifier)
+            .replaceEntries(backupData['bodyProgressEntries']);
       }
 
       // Update settings

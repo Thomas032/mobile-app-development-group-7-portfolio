@@ -1,4 +1,5 @@
 import 'package:cal_tab/models/activity_level.dart';
+import 'package:cal_tab/models/body_progress_entry.dart';
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/gender.dart';
 import 'package:cal_tab/models/goal_type.dart';
@@ -69,6 +70,24 @@ void main() {
       expect(decoded.foodItem.name, entry.foodItem.name);
       expect(decoded.quantity, entry.quantity);
       expect(decoded.calories, 180);
+    });
+
+    test('round-trips BodyProgressEntry JSON', () {
+      final entry = BodyProgressEntry(
+        id: 'progress-1',
+        date: DateTime.utc(2026, 5, 10),
+        weightKg: 70.6,
+        waistCm: 81.4,
+        note: 'Back on routine',
+      );
+
+      final decoded = BodyProgressEntry.fromJson(entry.toJson());
+
+      expect(decoded.id, entry.id);
+      expect(decoded.date, entry.date);
+      expect(decoded.weightKg, entry.weightKg);
+      expect(decoded.waistCm, entry.waistCm);
+      expect(decoded.note, entry.note);
     });
   });
 }

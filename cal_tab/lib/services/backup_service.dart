@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cal_tab/models/app_settings.dart';
+import 'package:cal_tab/models/body_progress_entry.dart';
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/user_profile.dart';
@@ -15,6 +16,7 @@ class BackupService {
     required UserProfile? userProfile,
     required List<MealEntry> meals,
     required List<FoodItem> customMeals,
+    required List<BodyProgressEntry> bodyProgressEntries,
     required AppSettings settings,
   }) {
     final backup = {
@@ -23,6 +25,9 @@ class BackupService {
       'userProfile': userProfile?.toJson(),
       'meals': meals.map((meal) => meal.toJson()).toList(),
       'customMeals': customMeals.map((meal) => meal.toJson()).toList(),
+      'bodyProgressEntries': bodyProgressEntries
+          .map((entry) => entry.toJson())
+          .toList(),
       'settings': settings.toJson(),
     };
 
@@ -31,7 +36,8 @@ class BackupService {
 
   /// Parses a backup JSON string and returns the extracted data
   ///
-  /// Returns a map with keys: 'userProfile', 'meals', 'customMeals', 'settings'
+  /// Returns a map with keys:
+  /// 'userProfile', 'meals', 'customMeals', 'bodyProgressEntries', 'settings'
   /// Returns null values for missing data
   static Map<String, dynamic>? importBackup(String backupJson) {
     try {
@@ -68,6 +74,16 @@ class BackupService {
             .toList();
       }
 
+      List<BodyProgressEntry> bodyProgressEntries = [];
+      if (decoded['bodyProgressEntries'] != null) {
+        final bodyProgressList =
+            decoded['bodyProgressEntries'] as List<dynamic>;
+        bodyProgressEntries = bodyProgressList
+            .cast<Map<String, dynamic>>()
+            .map(BodyProgressEntry.fromJson)
+            .toList();
+      }
+
       AppSettings settings = const AppSettings();
       if (decoded['settings'] != null) {
         settings = AppSettings.fromJson(
@@ -79,6 +95,7 @@ class BackupService {
         'userProfile': userProfile,
         'meals': meals,
         'customMeals': customMeals,
+        'bodyProgressEntries': bodyProgressEntries,
         'settings': settings,
       };
     } catch (e) {

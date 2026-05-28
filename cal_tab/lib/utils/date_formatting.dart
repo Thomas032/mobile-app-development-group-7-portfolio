@@ -16,3 +16,7 @@ const _months = [
 String formatShortDate(DateTime date) {
   return '${_months[date.month - 1]} ${date.day}';
 }
+
+String formatLongDate(DateTime date) {
+  return '${_months[date.month - 1]} ${date.day}, ${date.year}';
+}

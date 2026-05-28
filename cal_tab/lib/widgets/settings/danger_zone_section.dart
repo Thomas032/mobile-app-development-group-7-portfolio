@@ -1,5 +1,6 @@
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
+import 'package:cal_tab/providers/body_progress_provider.dart';
 import 'package:cal_tab/widgets/shared/section_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,6 +39,17 @@ class DangerZoneSection extends ConsumerWidget {
             onPressed: () => _confirmAndClearFoodLogs(context, ref),
             icon: const Icon(Icons.delete_outline),
             label: const Text('Clear food logs'),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const Key('clear_body_progress_button'),
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: colors.onError,
+            ),
+            onPressed: () => _confirmAndClearBodyProgress(context, ref),
+            icon: const Icon(Icons.monitor_weight_outlined),
+            label: const Text('Clear body progress'),
           ),
         ],
       ),
@@ -82,6 +94,26 @@ class DangerZoneSection extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Food logs cleared.')));
+  }
+
+  Future<void> _confirmAndClearBodyProgress(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await _showDangerConfirmation(
+      context,
+      title: 'Clear body progress?',
+      message:
+          'Do you really want to delete all body progress entries? This permanently removes your saved weight history and notes. Consider exporting a backup first if you want to keep your data.',
+      confirmLabel: 'Clear body progress',
+    );
+    if (!confirmed) return;
+
+    await ref.read(bodyProgressControllerProvider.notifier).clearSavedEntries();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Body progress cleared.')));
   }
 
   Future<bool> _showDangerConfirmation(

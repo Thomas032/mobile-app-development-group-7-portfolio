@@ -1,5 +1,6 @@
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/stats_provider.dart';
+import 'package:cal_tab/widgets/stats/body_progress_section.dart';
 import 'package:cal_tab/widgets/stats/calorie_trend.dart';
 import 'package:cal_tab/widgets/stats/macro_averages.dart';
 import 'package:cal_tab/widgets/stats/meal_consistency.dart';
@@ -56,6 +57,8 @@ class StatsScreen extends ConsumerWidget {
                         const SizedBox(height: 20),
                         MealConsistencyCard(snapshot: snapshot),
                       ],
+                      const SizedBox(height: 20),
+                      BodyProgressSection(profile: profile),
                     ],
                   ),
                 ),
