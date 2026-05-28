@@ -60,12 +60,11 @@ class FoodSearchController extends AsyncNotifier<FoodSearchState> {
     final result = await AsyncValue.guard(() => _fetchFirstPage(trimmedQuery));
     // Discard results that belong to a superseded search.
     if (_searchGeneration == generation) {
-      // On transient failure, preserve previous data so the UI never blanks out.
-      // The error widget is only shown on first-load failures (no previous data).
-      state = switch (result) {
-        AsyncError() => result.copyWithPrevious(state),
-        _ => result,
-      };
+      // Surface the actual outcome of the current query — including errors.
+      // Previously we attached the prior data to errors, which made a failed
+      // search silently fall back to the last successful query's results
+      // (e.g. typing "apple" after "melon" returned melon on a 429).
+      state = result;
     }
   }
 
