@@ -8,6 +8,7 @@ class SearchCommandBar extends StatelessWidget {
     required this.onSubmitted,
     required this.onBarcode,
     required this.onSnap2Cal,
+    required this.onCreateCustomMeal,
   });
 
   final TextEditingController controller;
@@ -15,60 +16,73 @@ class SearchCommandBar extends StatelessWidget {
   final ValueChanged<String> onSubmitted;
   final VoidCallback onBarcode;
   final VoidCallback onSnap2Cal;
+  final VoidCallback onCreateCustomMeal;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        IconButton(
-          tooltip: 'Back',
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(18),
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'Back',
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.arrow_back),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('food_search_field'),
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      filled: false,
-                      isDense: true,
-                      hintText: 'Search everything',
-                      contentPadding: EdgeInsets.fromLTRB(16, 14, 8, 14),
+            const SizedBox(width: 4),
+            Expanded(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('food_search_field'),
+                        controller: controller,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          hintText: 'Search everything',
+                          contentPadding: EdgeInsets.fromLTRB(16, 14, 8, 14),
+                        ),
+                        minLines: 1,
+                        textInputAction: TextInputAction.search,
+                        onChanged: onChanged,
+                        onSubmitted: onSubmitted,
+                      ),
                     ),
-                    minLines: 1,
-                    textInputAction: TextInputAction.search,
-                    onChanged: onChanged,
-                    onSubmitted: onSubmitted,
-                  ),
+                    _CommandIconButton(
+                      tooltip: 'Barcode scanner',
+                      icon: Icons.qr_code_scanner,
+                      onPressed: onBarcode,
+                    ),
+                    _CommandIconButton(
+                      tooltip: 'Snap2Cal',
+                      icon: Icons.photo_camera_outlined,
+                      onPressed: onSnap2Cal,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                 ),
-                _CommandIconButton(
-                  tooltip: 'Barcode scanner',
-                  icon: Icons.qr_code_scanner,
-                  onPressed: onBarcode,
-                ),
-                _CommandIconButton(
-                  tooltip: 'Snap2Cal',
-                  icon: Icons.photo_camera_outlined,
-                  onPressed: onSnap2Cal,
-                ),
-                const SizedBox(width: 4),
-              ],
+              ),
             ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          key: const Key('create_custom_meal_button'),
+          onPressed: onCreateCustomMeal,
+          icon: const Icon(Icons.edit_note_rounded),
+          label: const Text('Create custom meal'),
         ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:cal_tab/providers/app_settings_provider.dart';
+import 'package:cal_tab/providers/custom_meals_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
@@ -20,15 +21,18 @@ class BackupController extends Notifier<BackupState> {
     try {
       final profiles = await ref.read(userProfileRepositoryProvider.future);
       final meals = await ref.read(mealLogRepositoryProvider.future);
+      final customMeals = await ref.read(customMealRepositoryProvider.future);
       final settings = await ref.read(appSettingsRepositoryProvider.future);
 
       final userProfile = await profiles.loadProfile();
       final mealEntries = await meals.loadEntries();
+      final savedCustomMeals = await customMeals.loadMeals();
       final appSettings = await settings.loadSettings();
 
       final backupJson = BackupService.exportBackup(
         userProfile: userProfile,
         meals: mealEntries,
+        customMeals: savedCustomMeals,
         settings: appSettings,
       );
 
@@ -54,6 +58,7 @@ class BackupController extends Notifier<BackupState> {
 
       final profiles = await ref.read(userProfileRepositoryProvider.future);
       final meals = await ref.read(mealLogRepositoryProvider.future);
+      final customMeals = await ref.read(customMealRepositoryProvider.future);
       final settings = await ref.read(appSettingsRepositoryProvider.future);
 
       // Save imported data to repositories
@@ -63,6 +68,10 @@ class BackupController extends Notifier<BackupState> {
 
       if (backupData['meals'] != null) {
         await meals.saveEntries(backupData['meals']);
+      }
+
+      if (backupData['customMeals'] != null) {
+        await customMeals.saveMeals(backupData['customMeals']);
       }
 
       if (backupData['settings'] != null) {
@@ -87,6 +96,13 @@ class BackupController extends Notifier<BackupState> {
       final dailyLogController = ref.read(dailyLogControllerProvider.notifier);
       if (backupData['meals'] != null && backupData['meals'] is List) {
         dailyLogController.state = DailyLogState(entries: backupData['meals']);
+      }
+
+      if (backupData['customMeals'] != null &&
+          backupData['customMeals'] is List) {
+        await ref
+            .read(customMealsControllerProvider.notifier)
+            .replaceMeals(backupData['customMeals']);
       }
 
       // Update settings

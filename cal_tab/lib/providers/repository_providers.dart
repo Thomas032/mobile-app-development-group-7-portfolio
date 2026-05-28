@@ -1,5 +1,6 @@
 import 'package:cal_tab/repositories/ai_api_key_repository.dart';
 import 'package:cal_tab/repositories/app_settings_repository.dart';
+import 'package:cal_tab/repositories/custom_meal_repository.dart';
 import 'package:cal_tab/repositories/food_search_repository.dart';
 import 'package:cal_tab/repositories/meal_log_repository.dart';
 import 'package:cal_tab/repositories/user_profile_repository.dart';
@@ -39,6 +40,13 @@ final mealLogRepositoryProvider = FutureProvider<MealLogRepository>((
 ) async {
   final store = await ref.watch(localKeyValueStoreProvider.future);
   return LocalMealLogRepository(store: store);
+});
+
+final customMealRepositoryProvider = FutureProvider<CustomMealRepository>((
+  ref,
+) async {
+  final store = await ref.watch(localKeyValueStoreProvider.future);
+  return LocalCustomMealRepository(store: store);
 });
 
 final appSettingsRepositoryProvider = FutureProvider<AppSettingsRepository>((

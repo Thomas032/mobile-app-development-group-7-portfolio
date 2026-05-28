@@ -3,6 +3,7 @@ import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/screens/app_root_screen.dart';
 import 'package:cal_tab/screens/add_food_screen.dart';
 import 'package:cal_tab/screens/barcode_scan_screen.dart';
+import 'package:cal_tab/screens/custom_meal_screen.dart';
 import 'package:cal_tab/screens/food_detail_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,6 +39,11 @@ final GoRouter appRouter = GoRouter(
           target: extra is FoodLogTarget ? extra.normalized() : null,
         );
       },
+    ),
+    GoRoute(
+      path: '/custom-meal',
+      name: 'custom-meal',
+      builder: (context, state) => const CustomMealScreen(),
     ),
     GoRoute(
       path: '/food-detail',
