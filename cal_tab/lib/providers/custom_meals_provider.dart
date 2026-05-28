@@ -18,6 +18,42 @@ class CustomMealsController extends AsyncNotifier<List<FoodItem>> {
     await repository.saveMeals(nextMeals);
   }
 
+  Future<void> updateMeal(FoodItem meal) async {
+    final current = state.asData?.value ?? const <FoodItem>[];
+    final nextMeals = <FoodItem>[
+      for (final existing in current)
+        if (existing.id == meal.id) meal else existing,
+    ];
+    state = AsyncData(nextMeals);
+
+    final repository = await ref.read(customMealRepositoryProvider.future);
+    await repository.saveMeals(nextMeals);
+  }
+
+  Future<void> removeMeal(String id) async {
+    final current = state.asData?.value ?? const <FoodItem>[];
+    final nextMeals = <FoodItem>[
+      for (final meal in current)
+        if (meal.id != id) meal,
+    ];
+    state = AsyncData(nextMeals);
+
+    final repository = await ref.read(customMealRepositoryProvider.future);
+    await repository.saveMeals(nextMeals);
+  }
+
+  Future<void> restoreMeal(FoodItem meal) async {
+    final current = state.asData?.value ?? const <FoodItem>[];
+    if (current.any((existing) => existing.id == meal.id)) {
+      return;
+    }
+    final nextMeals = <FoodItem>[...current, meal];
+    state = AsyncData(nextMeals);
+
+    final repository = await ref.read(customMealRepositoryProvider.future);
+    await repository.saveMeals(nextMeals);
+  }
+
   Future<void> replaceMeals(List<FoodItem> meals) async {
     state = AsyncData(meals);
     final repository = await ref.read(customMealRepositoryProvider.future);

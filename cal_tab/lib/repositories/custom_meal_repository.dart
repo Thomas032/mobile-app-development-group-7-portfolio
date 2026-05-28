@@ -10,6 +10,10 @@ abstract class CustomMealRepository {
 
   Future<void> addMeal(FoodItem meal);
 
+  Future<void> removeMeal(String id);
+
+  Future<void> updateMeal(FoodItem meal);
+
   Future<void> clearMeals();
 }
 
@@ -46,6 +50,24 @@ class LocalCustomMealRepository implements CustomMealRepository {
   Future<void> addMeal(FoodItem meal) async {
     final meals = await loadMeals();
     await saveMeals([...meals, meal]);
+  }
+
+  @override
+  Future<void> removeMeal(String id) async {
+    final meals = await loadMeals();
+    await saveMeals([
+      for (final meal in meals)
+        if (meal.id != id) meal,
+    ]);
+  }
+
+  @override
+  Future<void> updateMeal(FoodItem meal) async {
+    final meals = await loadMeals();
+    await saveMeals([
+      for (final existing in meals)
+        if (existing.id == meal.id) meal else existing,
+    ]);
   }
 
   @override
