@@ -87,6 +87,12 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                 onCreateCustomMeal: () => _handleCreateCustomMeal(target),
               ),
             ),
+            SizedBox(
+              height: 3,
+              child: searchState.isLoading
+                  ? const LinearProgressIndicator(minHeight: 3)
+                  : null,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: searchState.when(
@@ -102,13 +108,20 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
               child: searchState.when(
                 skipLoadingOnRefresh: true,
                 skipError: true,
-                data: (state) => FoodResultsList(
-                  state: state,
-                  target: target,
-                  customMeals: customMeals.asData?.value ?? const [],
-                  onLoadMore: () async => ref
-                      .read(foodSearchControllerProvider.notifier)
-                      .loadMore(),
+                data: (state) => IgnorePointer(
+                  ignoring: searchState.isLoading,
+                  child: AnimatedOpacity(
+                    opacity: searchState.isLoading ? 0.5 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: FoodResultsList(
+                      state: state,
+                      target: target,
+                      customMeals: customMeals.asData?.value ?? const [],
+                      onLoadMore: () async => ref
+                          .read(foodSearchControllerProvider.notifier)
+                          .loadMore(),
+                    ),
+                  ),
                 ),
                 loading: LoadingProductList.new,
                 error: (error, stackTrace) =>
