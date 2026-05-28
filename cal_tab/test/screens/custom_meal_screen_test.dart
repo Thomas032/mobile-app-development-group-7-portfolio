@@ -4,6 +4,7 @@ import 'package:cal_tab/screens/custom_meal_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../fakes/fake_custom_meal_repository.dart';
 
@@ -11,34 +12,39 @@ void main() {
   testWidgets('saves a custom meal and returns it to the caller', (
     tester,
   ) async {
+    _useTallViewport(tester);
     final repository = FakeCustomMealRepository();
     FoodItem? savedMeal;
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, _) => Scaffold(
+            body: Center(
+              child: FilledButton(
+                onPressed: () async {
+                  savedMeal = await context.pushNamed<FoodItem>('custom-meal');
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/custom-meal',
+          name: 'custom-meal',
+          builder: (_, _) => const CustomMealScreen(),
+        ),
+      ],
+    );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           customMealRepositoryProvider.overrideWith((ref) async => repository),
         ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) {
-              return Scaffold(
-                body: Center(
-                  child: FilledButton(
-                    onPressed: () async {
-                      savedMeal = await Navigator.of(context).push<FoodItem>(
-                        MaterialPageRoute(
-                          builder: (_) => const CustomMealScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
 
@@ -81,4 +87,11 @@ void main() {
     expect(savedMeal?.name, 'Homemade granola');
     expect(savedMeal?.calories, 450);
   });
+}
+
+void _useTallViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 1400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
