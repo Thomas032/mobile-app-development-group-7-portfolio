@@ -1,6 +1,6 @@
+import 'package:cal_tab/providers/body_progress_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/profile_setup_provider.dart';
-import 'package:cal_tab/providers/body_progress_provider.dart';
 import 'package:cal_tab/widgets/shared/section_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
