@@ -209,9 +209,13 @@ class _BodyProgressSectionState extends ConsumerState<BodyProgressSection> {
   }
 
   Future<void> _deleteEntry(BodyProgressEntry entry) async {
-    await ref
-        .read(bodyProgressControllerProvider.notifier)
-        .removeEntry(entry.id);
+    try {
+      await ref
+          .read(bodyProgressControllerProvider.notifier)
+          .removeEntry(entry.id);
+    } catch (_) {
+      return;
+    }
     if (!mounted) {
       return;
     }
