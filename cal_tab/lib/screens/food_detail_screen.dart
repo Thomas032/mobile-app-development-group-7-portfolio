@@ -2,6 +2,7 @@ import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/food_log_route_args.dart';
 import 'package:cal_tab/models/meal_entry.dart';
 import 'package:cal_tab/models/meal_type.dart';
+import 'package:cal_tab/providers/custom_meals_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
 import 'package:cal_tab/providers/selected_log_date_provider.dart';
@@ -11,6 +12,7 @@ import 'package:cal_tab/widgets/food_detail/nutrient_row.dart';
 import 'package:cal_tab/widgets/food_detail/meal_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 enum _InputMode { grams, portions }
 
@@ -260,6 +262,32 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
                       ),
                     ),
                   ],
+                  if (_isCustomMeal(food)) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      key: const Key('edit_custom_meal_button'),
+                      onPressed: _isSaving
+                          ? null
+                          : () => _editCustomMeal(food),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit custom meal'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      key: const Key('delete_custom_meal_button'),
+                      onPressed: _isSaving
+                          ? null
+                          : () => _deleteCustomMeal(food),
+                      icon: Icon(Icons.delete_outline, color: colors.error),
+                      label: Text(
+                        'Delete custom meal',
+                        style: TextStyle(color: colors.error),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colors.error),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -279,6 +307,56 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
       return;
     }
     setState(() => _mealType = next);
+  }
+
+  bool _isCustomMeal(FoodItem food) {
+    final meals = ref.watch(customMealsControllerProvider).asData?.value;
+    if (meals == null) return false;
+    return meals.any((meal) => meal.id == food.id);
+  }
+
+  Future<void> _editCustomMeal(FoodItem food) async {
+    final updated = await context.pushNamed<FoodItem>(
+      'custom-meal',
+      extra: food,
+    );
+    if (!mounted || updated == null) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _deleteCustomMeal(FoodItem food) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete custom meal?'),
+          content: Text(
+            'Remove "${food.name}" from your saved meals? Past log entries '
+            'that already used it will stay in your history.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonal(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    await ref.read(customMealsControllerProvider.notifier).removeMeal(food.id);
+    if (mounted) {
+      setState(() => _isSaving = false);
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Future<void> _deleteEntry() async {

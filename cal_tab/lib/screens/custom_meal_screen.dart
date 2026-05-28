@@ -1,12 +1,17 @@
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/providers/custom_meals_provider.dart';
+import 'package:cal_tab/widgets/custom_meal/custom_meal_number_field.dart';
 import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class CustomMealScreen extends ConsumerStatefulWidget {
-  const CustomMealScreen({super.key});
+  const CustomMealScreen({super.key, this.existingMeal});
+
+  final FoodItem? existingMeal;
+
+  bool get isEditing => existingMeal != null;
 
   @override
   ConsumerState<CustomMealScreen> createState() => _CustomMealScreenState();
@@ -14,20 +19,79 @@ class CustomMealScreen extends ConsumerStatefulWidget {
 
 class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _caloriesController = TextEditingController();
-  final _proteinController = TextEditingController(text: '0');
-  final _carbsController = TextEditingController(text: '0');
-  final _fatController = TextEditingController(text: '0');
-  final _fiberController = TextEditingController(text: '0');
-  final _sugarController = TextEditingController(text: '0');
-  final _sodiumController = TextEditingController(text: '0');
-  final _saturatedFatController = TextEditingController(text: '0');
+  late final TextEditingController _nameController;
+  late final TextEditingController _mealSizeController;
+  late final TextEditingController _caloriesController;
+  late final TextEditingController _proteinController;
+  late final TextEditingController _carbsController;
+  late final TextEditingController _fatController;
+  late final TextEditingController _fiberController;
+  late final TextEditingController _sugarController;
+  late final TextEditingController _sodiumController;
+  late final TextEditingController _saturatedFatController;
+
+  // Tracked so we can rebuild for the live "remaining" hint.
+  late final List<TextEditingController> _liveControllers;
+
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    final existing = widget.existingMeal;
+
+    // Existing meals are stored per-100g, so default the editor size to 100.
+    // The pre-filled macro values are exactly the per-100g values.
+    _nameController = TextEditingController(text: existing?.name ?? '');
+    _mealSizeController = TextEditingController(text: '100');
+    _caloriesController = TextEditingController(
+      text: existing != null ? existing.calories.toString() : '',
+    );
+    _proteinController = TextEditingController(
+      text: _formatNumber(existing?.proteinGrams ?? 0),
+    );
+    _carbsController = TextEditingController(
+      text: _formatNumber(existing?.carbsGrams ?? 0),
+    );
+    _fatController = TextEditingController(
+      text: _formatNumber(existing?.fatGrams ?? 0),
+    );
+    _fiberController = TextEditingController(
+      text: _formatNumber(existing?.fiberGrams ?? 0),
+    );
+    _sugarController = TextEditingController(
+      text: _formatNumber(existing?.sugarGrams ?? 0),
+    );
+    _sodiumController = TextEditingController(
+      text: _formatNumber(existing?.sodiumMilligrams ?? 0),
+    );
+    _saturatedFatController = TextEditingController(
+      text: _formatNumber(existing?.saturatedFatGrams ?? 0),
+    );
+
+    _liveControllers = [
+      _mealSizeController,
+      _proteinController,
+      _carbsController,
+      _fatController,
+      _fiberController,
+      _sugarController,
+      _saturatedFatController,
+    ];
+    for (final controller in _liveControllers) {
+      controller.addListener(_onLiveChange);
+    }
+  }
+
+  void _onLiveChange() => setState(() {});
+
+  @override
   void dispose() {
+    for (final controller in _liveControllers) {
+      controller.removeListener(_onLiveChange);
+    }
     _nameController.dispose();
+    _mealSizeController.dispose();
     _caloriesController.dispose();
     _proteinController.dispose();
     _carbsController.dispose();
@@ -43,6 +107,16 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
+    final isEditing = widget.isEditing;
+
+    final mealSize = _parseDouble(_mealSizeController.text);
+    final protein = _parseDouble(_proteinController.text) ?? 0;
+    final carbs = _parseDouble(_carbsController.text) ?? 0;
+    final fat = _parseDouble(_fatController.text) ?? 0;
+    final macroTotal = protein + carbs + fat;
+    final remaining = (mealSize ?? 0) - macroTotal;
+    final hasMealSize = mealSize != null && mealSize > 0;
+    final overBudget = hasMealSize && remaining < 0;
 
     return Scaffold(
       body: SafeArea(
@@ -59,7 +133,7 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Create custom meal',
+                    isEditing ? 'Edit custom meal' : 'Create custom meal',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -71,11 +145,13 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
             AppCard(
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Save a reusable food with nutrition per 100g.',
+                      'Save a reusable food. Macros below are for the meal '
+                      'size you enter — we store them normalized to per-100g.',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -94,8 +170,17 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    _NumberField(
-                      fieldKey: const Key('custom_meal_calories_field'),
+                    CustomMealNumberField(
+                      key: const Key('custom_meal_size_field'),
+                      controller: _mealSizeController,
+                      label: 'Meal size',
+                      suffix: 'g',
+                      allowDecimal: false,
+                      validator: _requiredPositiveInt,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomMealNumberField(
+                      key: const Key('custom_meal_calories_field'),
                       controller: _caloriesController,
                       label: 'Calories',
                       suffix: 'kcal',
@@ -106,22 +191,22 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _NumberField(
-                            fieldKey: const Key('custom_meal_protein_field'),
+                          child: CustomMealNumberField(
+                            key: const Key('custom_meal_protein_field'),
                             controller: _proteinController,
                             label: 'Protein',
                             suffix: 'g',
-                            validator: _requiredNonNegativeDouble,
+                            validator: _macroValidator,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _NumberField(
-                            fieldKey: const Key('custom_meal_carbs_field'),
+                          child: CustomMealNumberField(
+                            key: const Key('custom_meal_carbs_field'),
                             controller: _carbsController,
                             label: 'Carbs',
                             suffix: 'g',
-                            validator: _requiredNonNegativeDouble,
+                            validator: _macroValidator,
                           ),
                         ),
                       ],
@@ -130,25 +215,32 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _NumberField(
-                            fieldKey: const Key('custom_meal_fat_field'),
+                          child: CustomMealNumberField(
+                            key: const Key('custom_meal_fat_field'),
                             controller: _fatController,
                             label: 'Fat',
                             suffix: 'g',
-                            validator: _requiredNonNegativeDouble,
+                            validator: _fatValidator,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _NumberField(
-                            fieldKey: const Key('custom_meal_fiber_field'),
+                          child: CustomMealNumberField(
+                            key: const Key('custom_meal_fiber_field'),
                             controller: _fiberController,
                             label: 'Fiber',
                             suffix: 'g',
-                            validator: _requiredNonNegativeDouble,
+                            validator: _fiberValidator,
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    _RemainingHint(
+                      mealSize: mealSize,
+                      macroTotal: macroTotal,
+                      remaining: remaining,
+                      overBudget: overBudget,
                     ),
                     const SizedBox(height: 16),
                     ExpansionTile(
@@ -169,30 +261,30 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
                         ),
                       ),
                       children: [
-                        _NumberField(
-                          fieldKey: const Key('custom_meal_sugar_field'),
+                        CustomMealNumberField(
+                          key: const Key('custom_meal_sugar_field'),
                           controller: _sugarController,
                           label: 'Sugar',
                           suffix: 'g',
-                          validator: _requiredNonNegativeDouble,
+                          validator: _sugarValidator,
                         ),
                         const SizedBox(height: 16),
-                        _NumberField(
-                          fieldKey: const Key('custom_meal_sodium_field'),
+                        CustomMealNumberField(
+                          key: const Key('custom_meal_sodium_field'),
                           controller: _sodiumController,
                           label: 'Sodium',
                           suffix: 'mg',
                           validator: _requiredNonNegativeDouble,
                         ),
                         const SizedBox(height: 16),
-                        _NumberField(
-                          fieldKey: const Key(
+                        CustomMealNumberField(
+                          key: const Key(
                             'custom_meal_saturated_fat_field',
                           ),
                           controller: _saturatedFatController,
                           label: 'Saturated fat',
                           suffix: 'g',
-                          validator: _requiredNonNegativeDouble,
+                          validator: _saturatedFatValidator,
                         ),
                       ],
                     ),
@@ -202,8 +294,18 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
                       child: FilledButton.icon(
                         key: const Key('save_custom_meal_button'),
                         onPressed: _isSaving ? null : _saveMeal,
-                        icon: const Icon(Icons.bookmark_add_outlined),
-                        label: Text(_isSaving ? 'Saving…' : 'Save custom meal'),
+                        icon: Icon(
+                          isEditing
+                              ? Icons.save_outlined
+                              : Icons.bookmark_add_outlined,
+                        ),
+                        label: Text(
+                          _isSaving
+                              ? 'Saving…'
+                              : (isEditing
+                                    ? 'Save changes'
+                                    : 'Save custom meal'),
+                        ),
                       ),
                     ),
                   ],
@@ -223,24 +325,39 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
 
     setState(() => _isSaving = true);
 
+    final mealSize = double.parse(_mealSizeController.text.trim());
+    final scale = 100 / mealSize;
+
+    final scaledCalories =
+        (int.parse(_caloriesController.text.trim()) * scale).round();
+    double scaled(TextEditingController c) =>
+        double.parse(c.text.trim()) * scale;
+
+    final existing = widget.existingMeal;
     final meal = FoodItem(
-      id: 'custom-${DateTime.now().microsecondsSinceEpoch}',
+      id: existing?.id ?? 'custom-${DateTime.now().microsecondsSinceEpoch}',
       name: _nameController.text.trim(),
-      calories: int.parse(_caloriesController.text.trim()),
-      proteinGrams: double.parse(_proteinController.text.trim()),
-      carbsGrams: double.parse(_carbsController.text.trim()),
-      fatGrams: double.parse(_fatController.text.trim()),
-      fiberGrams: double.parse(_fiberController.text.trim()),
-      sugarGrams: double.parse(_sugarController.text.trim()),
-      sodiumMilligrams: double.parse(_sodiumController.text.trim()),
-      saturatedFatGrams: double.parse(_saturatedFatController.text.trim()),
+      calories: scaledCalories,
+      proteinGrams: scaled(_proteinController),
+      carbsGrams: scaled(_carbsController),
+      fatGrams: scaled(_fatController),
+      fiberGrams: scaled(_fiberController),
+      sugarGrams: scaled(_sugarController),
+      sodiumMilligrams: scaled(_sodiumController),
+      saturatedFatGrams: scaled(_saturatedFatController),
+      imageUrl: existing?.imageUrl,
     );
 
-    await ref.read(customMealsControllerProvider.notifier).addMeal(meal);
+    final controller = ref.read(customMealsControllerProvider.notifier);
+    if (existing != null) {
+      await controller.updateMeal(meal);
+    } else {
+      await controller.addMeal(meal);
+    }
+
     if (!mounted) {
       return;
     }
-
     context.pop(meal);
   }
 
@@ -259,33 +376,119 @@ class _CustomMealScreenState extends ConsumerState<CustomMealScreen> {
     }
     return null;
   }
+
+  // Protein + carbs cannot individually exceed the meal size.
+  String? _macroValidator(String? value) {
+    final base = _requiredNonNegativeDouble(value);
+    if (base != null) return base;
+    final mealSize = _parseDouble(_mealSizeController.text);
+    if (mealSize == null || mealSize <= 0) return null;
+    final v = double.parse(value!.trim());
+    if (v > mealSize) {
+      return 'Exceeds meal size';
+    }
+    return null;
+  }
+
+  // Fat field carries the "sum exceeds meal size" message.
+  String? _fatValidator(String? value) {
+    final macroError = _macroValidator(value);
+    if (macroError != null) return macroError;
+    final mealSize = _parseDouble(_mealSizeController.text);
+    if (mealSize == null || mealSize <= 0) return null;
+    final protein = _parseDouble(_proteinController.text) ?? 0;
+    final carbs = _parseDouble(_carbsController.text) ?? 0;
+    final fat = _parseDouble(value) ?? 0;
+    if (protein + carbs + fat > mealSize) {
+      return 'P+C+F exceeds meal size';
+    }
+    return null;
+  }
+
+  String? _fiberValidator(String? value) {
+    final base = _requiredNonNegativeDouble(value);
+    if (base != null) return base;
+    final fiber = double.parse(value!.trim());
+    final carbs = _parseDouble(_carbsController.text);
+    if (carbs != null && fiber > carbs) {
+      return 'Fiber > carbs';
+    }
+    return null;
+  }
+
+  String? _sugarValidator(String? value) {
+    final base = _requiredNonNegativeDouble(value);
+    if (base != null) return base;
+    final sugar = double.parse(value!.trim());
+    final carbs = _parseDouble(_carbsController.text);
+    if (carbs != null && sugar > carbs) {
+      return 'Sugar > carbs';
+    }
+    return null;
+  }
+
+  String? _saturatedFatValidator(String? value) {
+    final base = _requiredNonNegativeDouble(value);
+    if (base != null) return base;
+    final satFat = double.parse(value!.trim());
+    final fat = _parseDouble(_fatController.text);
+    if (fat != null && satFat > fat) {
+      return 'Sat. fat > fat';
+    }
+    return null;
+  }
+
+  static double? _parseDouble(String? value) {
+    return double.tryParse(value?.trim() ?? '');
+  }
+
+  static String _formatNumber(double value) {
+    if (value == 0) return '0';
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(2);
+  }
 }
 
-class _NumberField extends StatelessWidget {
-  const _NumberField({
-    required this.fieldKey,
-    required this.controller,
-    required this.label,
-    required this.suffix,
-    required this.validator,
-    this.allowDecimal = true,
+class _RemainingHint extends StatelessWidget {
+  const _RemainingHint({
+    required this.mealSize,
+    required this.macroTotal,
+    required this.remaining,
+    required this.overBudget,
   });
 
-  final Key fieldKey;
-  final TextEditingController controller;
-  final String label;
-  final String suffix;
-  final String? Function(String?) validator;
-  final bool allowDecimal;
+  final double? mealSize;
+  final double macroTotal;
+  final double remaining;
+  final bool overBudget;
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      key: fieldKey,
-      controller: controller,
-      decoration: InputDecoration(labelText: label, suffixText: suffix),
-      keyboardType: TextInputType.numberWithOptions(decimal: allowDecimal),
-      validator: validator,
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
+    if (mealSize == null || mealSize! <= 0) {
+      return Text(
+        'Enter a meal size to see remaining macros.',
+        style: textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+      );
+    }
+
+    final color = overBudget ? colors.error : colors.onSurfaceVariant;
+    final label = overBudget
+        ? 'Over by ${(-remaining).toStringAsFixed(1)} g (P+C+F = '
+              '${macroTotal.toStringAsFixed(1)} g / ${mealSize!.toStringAsFixed(0)} g)'
+        : 'Remaining: ${remaining.toStringAsFixed(1)} g of '
+              '${mealSize!.toStringAsFixed(0)} g';
+
+    return Text(
+      label,
+      style: textTheme.bodySmall?.copyWith(
+        color: color,
+        fontWeight: overBudget ? FontWeight.w700 : FontWeight.w500,
+      ),
     );
   }
 }

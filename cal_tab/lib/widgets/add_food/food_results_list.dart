@@ -1,8 +1,11 @@
 import 'package:cal_tab/models/food_item.dart';
 import 'package:cal_tab/models/food_log_route_args.dart';
+import 'package:cal_tab/providers/custom_meals_provider.dart';
 import 'package:cal_tab/providers/daily_log_provider.dart';
 import 'package:cal_tab/providers/food_search_provider.dart';
 import 'package:cal_tab/widgets/add_food/empty_results_state.dart';
+import 'package:cal_tab/widgets/add_food/food_results_load_more_footer.dart';
+import 'package:cal_tab/widgets/add_food/food_results_section_header.dart';
 import 'package:cal_tab/widgets/add_food/food_search_result_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,13 +97,14 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
 
         if (customHeaderCount == 1) {
           if (cursor == 0) {
-            return const _SectionHeader(label: 'Custom meals');
+            return const FoodResultsSectionHeader(label: 'Custom meals');
           }
           cursor -= 1;
 
           if (cursor < customMeals.length) {
-            return FoodSearchResultTile(
-              foodItem: customMeals[cursor],
+            final meal = customMeals[cursor];
+            return _DismissibleCustomMealTile(
+              meal: meal,
               target: widget.target,
               isFirst: cursor == 0,
               isLast: cursor == customMeals.length - 1,
@@ -111,7 +115,7 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
 
         if (recentHeaderCount == 1) {
           if (cursor == 0) {
-            return const _SectionHeader(label: 'Recent');
+            return const FoodResultsSectionHeader(label: 'Recent');
           }
           cursor -= 1;
 
@@ -128,7 +132,7 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
 
         if (apiHeaderCount == 1) {
           if (cursor == 0) {
-            return const _SectionHeader(label: 'All results');
+            return const FoodResultsSectionHeader(label: 'All results');
           }
           cursor -= 1;
         }
@@ -142,7 +146,7 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
           );
         }
 
-        return _LoadMoreFooter(
+        return FoodResultsLoadMoreFooter(
           hasMore: state.hasMore,
           isLoadingMore: state.isLoadingMore || _loadMoreInFlight,
           onLoadMore: _requestLoadMore,
@@ -188,59 +192,87 @@ class _FoodResultsListState extends ConsumerState<FoodResultsList> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
+class _DismissibleCustomMealTile extends ConsumerWidget {
+  const _DismissibleCustomMealTile({
+    required this.meal,
+    required this.target,
+    required this.isFirst,
+    required this.isLast,
+  });
 
-  final String label;
+  final FoodItem meal;
+  final FoodLogTarget target;
+  final bool isFirst;
+  final bool isLast;
 
   @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
-      child: Text(
-        label.toUpperCase(),
-        style: textTheme.labelSmall?.copyWith(
-          color: colors.onSurfaceVariant,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.6,
+
+    return Dismissible(
+      key: ValueKey('custom-meal-${meal.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDelete(context),
+      onDismissed: (_) => _handleDelete(context, ref),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: colors.errorContainer,
+          borderRadius: BorderRadius.circular(10),
         ),
+        child: Icon(Icons.delete_outline, color: colors.onErrorContainer),
+      ),
+      child: FoodSearchResultTile(
+        foodItem: meal,
+        target: target,
+        isFirst: isFirst,
+        isLast: isLast,
       ),
     );
   }
-}
 
-class _LoadMoreFooter extends StatelessWidget {
-  const _LoadMoreFooter({
-    required this.hasMore,
-    required this.isLoadingMore,
-    required this.onLoadMore,
-  });
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete custom meal?'),
+          content: Text(
+            'Remove "${meal.name}" from your saved meals? Past log entries '
+            'that already used it will stay in your history.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonal(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
 
-  final bool hasMore;
-  final bool isLoadingMore;
-  final VoidCallback onLoadMore;
+  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(customMealsControllerProvider.notifier);
+    final removed = meal;
 
-  @override
-  Widget build(BuildContext context) {
-    if (!hasMore) {
-      return const SizedBox(height: 8);
-    }
+    await controller.removeMeal(removed.id);
 
-    if (isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: OutlinedButton.icon(
-        onPressed: onLoadMore,
-        icon: const Icon(Icons.expand_more),
-        label: const Text('Load more'),
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Removed "${removed.name}"'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => controller.restoreMeal(removed),
+        ),
       ),
     );
   }

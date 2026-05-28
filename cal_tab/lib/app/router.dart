@@ -43,7 +43,12 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/custom-meal',
       name: 'custom-meal',
-      builder: (context, state) => const CustomMealScreen(),
+      builder: (context, state) {
+        final extra = state.extra;
+        return CustomMealScreen(
+          existingMeal: extra is FoodItem ? extra : null,
+        );
+      },
     ),
     GoRoute(
       path: '/food-detail',
