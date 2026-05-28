@@ -4,11 +4,16 @@ import 'package:cal_tab/screens/app_root_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../fakes/fake_user_profile_repository.dart';
 import '../fakes/in_memory_secure_key_value_store.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('completes onboarding and saves the profile', (tester) async {
     _useTallViewport(tester);
     final profileRepository = FakeUserProfileRepository();
