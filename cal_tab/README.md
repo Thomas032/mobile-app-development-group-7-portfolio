@@ -9,6 +9,7 @@ CalTab is the group project for the _Mobile Applications_ module (THWS / TAMK, 2
 - **Onboarding** — collects age, height, weight, sex, activity level, and goal; computes BMR/TDEE and daily macro targets.
 - **Home** — daily calorie ring, macro tiles, meal accordions (breakfast/lunch/dinner/snack), and a horizontal day picker to back-log meals.
 - **Food search** — paginated Open Food Facts search with infinite scroll.
+- **Custom meals** — save your own foods with validated macros (sum of protein+carbs+fat can't exceed the meal size); edit, swipe-to-delete from the search list, or delete from the detail screen with Undo.
 - **Barcode scan** — camera + Google ML Kit, falls back to Open Food Facts lookup.
 - **Snap2Cal** — take a photo, Gemini Vision estimates the food and its macros.
 - **AI assistant** — in-app chat backed by Gemini (BYOK: bring your own API key).
