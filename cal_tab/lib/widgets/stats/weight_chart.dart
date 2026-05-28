@@ -20,6 +20,9 @@ class WeightChartCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
     final sortedAsc = entries.reversed.toList(growable: false);
+    final labelStyle =
+        textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant) ??
+        TextStyle(color: colors.onSurfaceVariant, fontSize: 11);
 
     return AppCard(
       child: Column(
@@ -29,7 +32,14 @@ class WeightChartCard extends StatelessWidget {
             'Weight over time',
             style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          Text(
+            'Weight in kg',
+            style: textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
           if (sortedAsc.length < 2)
             Container(
               height: 180,
@@ -54,9 +64,10 @@ class WeightChartCard extends StatelessWidget {
                   entries: sortedAsc,
                   baselineWeight: baselineWeightKg,
                   colorScheme: colors,
+                  labelStyle: labelStyle,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  padding: const EdgeInsets.fromLTRB(44, 12, 12, 8),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -65,16 +76,12 @@ class WeightChartCard extends StatelessWidget {
                         children: [
                           Text(
                             formatShortDate(sortedAsc.first.date),
-                            style: textTheme.labelSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
+                            style: labelStyle,
                           ),
                           const Spacer(),
                           Text(
                             formatShortDate(sortedAsc.last.date),
-                            style: textTheme.labelSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
+                            style: labelStyle,
                           ),
                         ],
                       ),
@@ -94,15 +101,17 @@ class _WeightChartPainter extends CustomPainter {
     required this.entries,
     required this.baselineWeight,
     required this.colorScheme,
+    required this.labelStyle,
   });
 
   final List<BodyProgressEntry> entries;
   final double baselineWeight;
   final ColorScheme colorScheme;
+  final TextStyle labelStyle;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const leftPad = 12.0;
+    const leftPad = 44.0;
     const rightPad = 12.0;
     const topPad = 12.0;
     const bottomPad = 28.0;
@@ -126,6 +135,19 @@ class _WeightChartPainter extends CustomPainter {
         Offset(leftPad, y),
         Offset(size.width - rightPad, y),
         gridPaint,
+      );
+
+      final value = high - (range * i / 3);
+      final tp = TextPainter(
+        text: TextSpan(
+          text: '${value.toStringAsFixed(1)} kg',
+          style: labelStyle,
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: leftPad - 4);
+      tp.paint(
+        canvas,
+        Offset(leftPad - 6 - tp.width, y - tp.height / 2),
       );
     }
 
@@ -182,6 +204,7 @@ class _WeightChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _WeightChartPainter oldDelegate) {
     return oldDelegate.entries != entries ||
         oldDelegate.baselineWeight != baselineWeight ||
-        oldDelegate.colorScheme != colorScheme;
+        oldDelegate.colorScheme != colorScheme ||
+        oldDelegate.labelStyle != labelStyle;
   }
 }
