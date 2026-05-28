@@ -8,17 +8,54 @@ import 'package:cal_tab/widgets/stats/weight_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BodyProgressSection extends ConsumerStatefulWidget {
+class BodyProgressSection extends ConsumerWidget {
   const BodyProgressSection({super.key, required this.profile});
 
   final UserProfile profile;
 
   @override
-  ConsumerState<BodyProgressSection> createState() =>
-      _BodyProgressSectionState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesAsync = ref.watch(bodyProgressControllerProvider);
+
+    return SectionCard(
+      title: 'Body Progress',
+      icon: Icons.monitor_weight_outlined,
+      child: entriesAsync.when(
+        data: (entries) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _CurrentWeightCard(profile: profile, entries: entries),
+            const SizedBox(height: 16),
+            WeightChartCard(
+              baselineWeightKg: profile.weightKg,
+              entries: entries,
+            ),
+            const SizedBox(height: 16),
+            _AddEntryForm(profile: profile),
+            const SizedBox(height: 16),
+            _HistoryCard(entries: entries),
+          ],
+        ),
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 28),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (error, stackTrace) => Text('Failed to load progress: $error'),
+      ),
+    );
+  }
 }
 
-class _BodyProgressSectionState extends ConsumerState<BodyProgressSection> {
+class _AddEntryForm extends ConsumerStatefulWidget {
+  const _AddEntryForm({required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  ConsumerState<_AddEntryForm> createState() => _AddEntryFormState();
+}
+
+class _AddEntryFormState extends ConsumerState<_AddEntryForm> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _waistController = TextEditingController();
@@ -43,37 +80,6 @@ class _BodyProgressSectionState extends ConsumerState<BodyProgressSection> {
 
   @override
   Widget build(BuildContext context) {
-    final entriesAsync = ref.watch(bodyProgressControllerProvider);
-
-    return SectionCard(
-      title: 'Body Progress',
-      icon: Icons.monitor_weight_outlined,
-      child: entriesAsync.when(
-        data: (entries) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _CurrentWeightCard(profile: widget.profile, entries: entries),
-            const SizedBox(height: 16),
-            WeightChartCard(
-              baselineWeightKg: widget.profile.weightKg,
-              entries: entries,
-            ),
-            const SizedBox(height: 16),
-            _buildForm(context),
-            const SizedBox(height: 16),
-            _HistoryCard(entries: entries, onDelete: _deleteEntry),
-          ],
-        ),
-        loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 28),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        error: (error, stackTrace) => Text('Failed to load progress: $error'),
-      ),
-    );
-  }
-
-  Widget _buildForm(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -210,22 +216,6 @@ class _BodyProgressSectionState extends ConsumerState<BodyProgressSection> {
     }
   }
 
-  Future<void> _deleteEntry(BodyProgressEntry entry) async {
-    try {
-      await ref
-          .read(bodyProgressControllerProvider.notifier)
-          .removeEntry(entry.id);
-    } catch (_) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Progress entry removed.')));
-  }
-
   String? _validatePositiveNumber(String? value) {
     final parsed = double.tryParse(value?.trim() ?? '');
     if (parsed == null || parsed <= 0) {
@@ -309,10 +299,9 @@ class _CurrentWeightCard extends StatelessWidget {
 
 
 class _HistoryCard extends StatelessWidget {
-  const _HistoryCard({required this.entries, required this.onDelete});
+  const _HistoryCard({required this.entries});
 
   final List<BodyProgressEntry> entries;
-  final Future<void> Function(BodyProgressEntry entry) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +328,7 @@ class _HistoryCard extends StatelessWidget {
             Column(
               children: [
                 for (var i = 0; i < entries.length; i++) ...[
-                  _HistoryRow(entry: entries[i], onDelete: onDelete),
+                  _HistoryRow(entry: entries[i]),
                   if (i != entries.length - 1)
                     Divider(
                       height: 24,
@@ -354,14 +343,13 @@ class _HistoryCard extends StatelessWidget {
   }
 }
 
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.entry, required this.onDelete});
+class _HistoryRow extends ConsumerWidget {
+  const _HistoryRow({required this.entry});
 
   final BodyProgressEntry entry;
-  final Future<void> Function(BodyProgressEntry entry) onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
 
@@ -399,11 +387,27 @@ class _HistoryRow extends StatelessWidget {
         ),
         IconButton(
           tooltip: 'Delete entry',
-          onPressed: () => onDelete(entry),
+          onPressed: () => _delete(context, ref),
           icon: Icon(Icons.delete_outline, color: colors.error),
         ),
       ],
     );
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(bodyProgressControllerProvider.notifier)
+          .removeEntry(entry.id);
+    } catch (_) {
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Progress entry removed.')));
   }
 }
 
