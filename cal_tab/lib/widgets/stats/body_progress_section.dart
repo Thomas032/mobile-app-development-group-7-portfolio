@@ -182,7 +182,7 @@ class _AddEntryFormState extends ConsumerState<_AddEntryForm> {
       final waistText = _waistController.text.trim();
       final noteText = _noteController.text.trim();
 
-      await ref
+      final newCalorieGoal = await ref
           .read(bodyProgressControllerProvider.notifier)
           .addEntry(
             BodyProgressEntry(
@@ -205,9 +205,12 @@ class _AddEntryFormState extends ConsumerState<_AddEntryForm> {
         _waistController.clear();
         _noteController.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Body progress entry saved.')),
-      );
+      final message = newCalorieGoal == null
+          ? 'Body progress entry saved.'
+          : 'Weight updated — calorie target is now $newCalorieGoal kcal.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
       if (!mounted) {
         return;
@@ -249,7 +252,10 @@ class _CurrentWeightCard extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final latest = entries.isEmpty ? null : entries.first;
     final currentWeight = latest?.weightKg ?? profile.weightKg;
-    final delta = currentWeight - profile.weightKg;
+    final baselineWeight = entries.isEmpty
+        ? profile.weightKg
+        : entries.last.weightKg;
+    final delta = currentWeight - baselineWeight;
 
     return AppCard(
       child: Column(
@@ -286,7 +292,7 @@ class _CurrentWeightCard extends StatelessWidget {
           Text(
             latest == null
                 ? 'Using your onboarding weight until you log your first progress entry.'
-                : '${_deltaLabel(delta)} since starting point of ${profile.weightKg.toStringAsFixed(1)} kg',
+                : '${_deltaLabel(delta)} since starting point of ${baselineWeight.toStringAsFixed(1)} kg',
             style: textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -395,8 +401,9 @@ class _HistoryRow extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    int? newCalorieGoal;
     try {
-      await ref
+      newCalorieGoal = await ref
           .read(bodyProgressControllerProvider.notifier)
           .removeEntry(entry.id);
     } catch (_) {
@@ -405,9 +412,12 @@ class _HistoryRow extends ConsumerWidget {
     if (!context.mounted) {
       return;
     }
+    final message = newCalorieGoal == null
+        ? 'Progress entry removed.'
+        : 'Entry removed — calorie target is now $newCalorieGoal kcal.';
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Progress entry removed.')));
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
