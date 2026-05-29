@@ -35,6 +35,32 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
   late GoalType _goalType = widget.profile.goalType;
 
   @override
+  void didUpdateWidget(covariant ProfileSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final p = widget.profile;
+    if (p == oldWidget.profile) return;
+
+    final age = '${p.age}';
+    if (_ageController.text != age) _ageController.text = age;
+
+    final height = p.heightCm.toStringAsFixed(0);
+    if (_heightController.text != height) _heightController.text = height;
+
+    final weight = p.weightKg.toStringAsFixed(1);
+    if (_weightController.text != weight) _weightController.text = weight;
+
+    if (_gender != p.gender ||
+        _activityLevel != p.activityLevel ||
+        _goalType != p.goalType) {
+      setState(() {
+        _gender = p.gender;
+        _activityLevel = p.activityLevel;
+        _goalType = p.goalType;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _ageController.dispose();
     _heightController.dispose();
