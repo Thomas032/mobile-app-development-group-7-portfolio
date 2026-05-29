@@ -77,8 +77,7 @@ void main() {
               routes: [
                 GoRoute(
                   path: '/',
-                  builder: (_, __) =>
-                      const MainShellScreen(profile: _profile),
+                  builder: (_, __) => const MainShellScreen(profile: _profile),
                 ),
                 GoRoute(
                   path: '/add-food',
@@ -97,10 +96,11 @@ void main() {
       await tester.tap(find.byKey(const Key('open_add_food_button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Log food'), findsOneWidget);
+      expect(find.text('Log entry'), findsOneWidget);
       expect(find.byKey(const Key('add_food_action_snap2cal')), findsOneWidget);
       expect(find.byKey(const Key('add_food_action_barcode')), findsOneWidget);
       expect(find.byKey(const Key('add_food_action_search')), findsOneWidget);
+      expect(find.byKey(const Key('add_food_action_weight')), findsOneWidget);
       expect(find.byKey(const Key('add_food_route')), findsNothing);
 
       await tester.tap(find.byKey(const Key('add_food_action_search')));

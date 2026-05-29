@@ -128,7 +128,7 @@ class _HistoryCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (entries.isEmpty)
             Text(
-              'No progress entries yet. Save your first check-in above.',
+              'No weight entries yet.',
               style: textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
               ),

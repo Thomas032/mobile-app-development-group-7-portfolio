@@ -43,12 +43,14 @@ void main() {
     expect(find.text('This week'), findsOneWidget);
     expect(find.text('Daily calories'), findsOneWidget);
     expect(find.text('Target 2200'), findsOneWidget);
-
-    await _scrollStatsUntilVisible(tester, find.text('Body Progress'));
+    await _scrollStatsUntilVisible(
+      tester,
+      find.text('Macro averages'),
+      tabKey: 'nutrition_stats_scroll',
+    );
 
     expect(find.text('Macro averages'), findsOneWidget);
     expect(find.text('Meal rhythm'), findsOneWidget);
-    expect(find.text('Body Progress'), findsOneWidget);
   });
 
   testWidgets('summarizes weekly calories and logged-day macro averages', (
@@ -86,7 +88,11 @@ void main() {
     expect(find.text('471'), findsOneWidget);
     expect(find.text('1/7'), findsWidgets);
 
-    await _scrollStatsUntilVisible(tester, find.text('Macro averages'));
+    await _scrollStatsUntilVisible(
+      tester,
+      find.text('Macro averages'),
+      tabKey: 'nutrition_stats_scroll',
+    );
 
     expect(find.text('Across 2 logged days'), findsOneWidget);
     expect(find.text('75/126g'), findsOneWidget);
@@ -120,6 +126,7 @@ void main() {
     await _scrollStatsUntilVisible(
       tester,
       find.byKey(const Key('stats_meal_breakfast_progress')),
+      tabKey: 'nutrition_stats_scroll',
     );
 
     final breakfastProgress = tester.widget<LinearProgressIndicator>(
@@ -156,9 +163,13 @@ void main() {
     );
     await tester.pump();
 
+    await tester.tap(find.text('Weight'));
+    await tester.pumpAndSettle();
+
     await _scrollStatsUntilVisible(
       tester,
       find.byKey(const Key('body_progress_current_weight')),
+      tabKey: 'weight_stats_scroll',
     );
 
     expect(find.text('Current weight'), findsOneWidget);
@@ -170,11 +181,12 @@ void main() {
 
 Future<void> _scrollStatsUntilVisible(
   WidgetTester tester,
-  Finder finder,
-) async {
+  Finder finder, {
+  String tabKey = 'nutrition_stats_scroll',
+}) async {
   final mainScrollable = find
       .descendant(
-        of: find.byKey(const Key('stats_main_scroll')),
+        of: find.byKey(Key(tabKey)),
         matching: find.byType(Scrollable),
       )
       .first;

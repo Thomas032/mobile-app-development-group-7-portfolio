@@ -145,10 +145,7 @@ class _WeightChartPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: leftPad - 4);
-      tp.paint(
-        canvas,
-        Offset(leftPad - 6 - tp.width, y - tp.height / 2),
-      );
+      tp.paint(canvas, Offset(leftPad - 6 - tp.width, y - tp.height / 2));
     }
 
     final pointOffsets = <Offset>[];
