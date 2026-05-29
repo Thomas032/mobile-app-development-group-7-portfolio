@@ -37,28 +37,8 @@ class _ImportBackupDialogState extends State<ImportBackupDialog> {
       content: SizedBox(
         width: double.maxFinite,
         child: useFilePicker
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Choose a backup JSON file from your device to restore your data.',
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _isImporting ? null : _importFromFile,
-                    icon: _isImporting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.upload_file_outlined),
-                    label: Text(
-                      _isImporting ? 'Importing...' : 'Choose backup file',
-                    ),
-                  ),
-                ],
+            ? const Text(
+                'Choose a backup JSON file from your device to restore your data.',
               )
             : Column(
                 mainAxisSize: MainAxisSize.min,
@@ -91,7 +71,11 @@ class _ImportBackupDialogState extends State<ImportBackupDialog> {
               : useFilePicker
               ? _importFromFile
               : _importFromClipboard,
-          child: Text(useFilePicker ? 'Import file' : 'Import'),
+          child: Text(
+            _isImporting
+                ? 'Importing...'
+                : (useFilePicker ? 'Choose backup file' : 'Import'),
+          ),
         ),
       ],
     );
