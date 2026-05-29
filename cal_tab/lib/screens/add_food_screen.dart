@@ -38,6 +38,10 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(foodSearchControllerProvider.notifier).browseAll();
+    });
     final action = widget.autoAction;
     if (action != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
