@@ -5,6 +5,15 @@ import 'package:cal_tab/utils/date_formatting.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+extension<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T) test) {
+    for (final element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
+
 class WeightEntryModal extends ConsumerStatefulWidget {
   const WeightEntryModal({super.key, required this.profile});
 
@@ -178,6 +187,55 @@ class _WeightEntryModalState extends ConsumerState<WeightEntryModal> {
       final waistText = _waistController.text.trim();
       final noteText = _noteController.text.trim();
 
+      // Check if an entry for this date already exists
+      final existingEntries =
+          ref.read(bodyProgressControllerProvider).asData?.value ?? [];
+      final existingForDate = existingEntries.firstWhereOrNull(
+        (entry) =>
+            entry.date.year == _selectedDate.year &&
+            entry.date.month == _selectedDate.month &&
+            entry.date.day == _selectedDate.day,
+      );
+
+      // If duplicate found, show confirmation dialog
+      if (existingForDate != null && mounted) {
+        setState(() => _isSaving = false);
+
+        final shouldReplace =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Replace entry?'),
+                content: Text(
+                  'You already have a weight entry for ${formatLongDate(_selectedDate)}.\n'
+                  'Do you want to replace it?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Replace'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+
+        if (!shouldReplace) {
+          return;
+        }
+
+        // Delete the old entry before adding the new one
+        setState(() => _isSaving = true);
+        await ref
+            .read(bodyProgressControllerProvider.notifier)
+            .removeEntry(existingForDate.id);
+      }
+
+      // Add the new entry
       await ref
           .read(bodyProgressControllerProvider.notifier)
           .addEntry(
@@ -196,7 +254,13 @@ class _WeightEntryModalState extends ConsumerState<WeightEntryModal> {
 
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Weight entry saved successfully.')),
+        SnackBar(
+          content: Text(
+            existingForDate != null
+                ? 'Weight entry replaced successfully.'
+                : 'Weight entry saved successfully.',
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) {

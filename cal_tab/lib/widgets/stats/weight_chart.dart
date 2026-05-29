@@ -5,6 +5,11 @@ import 'package:cal_tab/utils/date_formatting.dart';
 import 'package:cal_tab/widgets/shared/app_card.dart';
 import 'package:flutter/material.dart';
 
+String _formatAxisDate(DateTime date, {required bool includeYear}) {
+  final short = formatShortDate(date);
+  return includeYear ? '$short ${date.year}' : short;
+}
+
 class WeightChartCard extends StatelessWidget {
   const WeightChartCard({
     super.key,
@@ -23,6 +28,10 @@ class WeightChartCard extends StatelessWidget {
     final labelStyle =
         textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant) ??
         TextStyle(color: colors.onSurfaceVariant, fontSize: 11);
+
+    final firstDate = sortedAsc.first.date;
+    final lastDate = sortedAsc.last.date;
+    final includeYearOnBounds = firstDate.year != lastDate.year;
 
     return AppCard(
       child: Column(
@@ -75,12 +84,18 @@ class WeightChartCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            formatShortDate(sortedAsc.first.date),
+                            _formatAxisDate(
+                              sortedAsc.first.date,
+                              includeYear: includeYearOnBounds,
+                            ),
                             style: labelStyle,
                           ),
                           const Spacer(),
                           Text(
-                            formatShortDate(sortedAsc.last.date),
+                            _formatAxisDate(
+                              sortedAsc.last.date,
+                              includeYear: true,
+                            ),
                             style: labelStyle,
                           ),
                         ],
@@ -149,8 +164,14 @@ class _WeightChartPainter extends CustomPainter {
     }
 
     final pointOffsets = <Offset>[];
+    final firstDateMs = entries.first.date.millisecondsSinceEpoch.toDouble();
+    final lastDateMs = entries.last.date.millisecondsSinceEpoch.toDouble();
+    final totalDateSpanMs = math.max(1.0, lastDateMs - firstDateMs);
+
     for (var i = 0; i < entries.length; i++) {
-      final x = leftPad + chartWidth * i / (entries.length - 1);
+      final dateMs = entries[i].date.millisecondsSinceEpoch.toDouble();
+      final dateRatio = (dateMs - firstDateMs) / totalDateSpanMs;
+      final x = leftPad + chartWidth * dateRatio.clamp(0.0, 1.0);
       final normalized = (entries[i].weightKg - low) / range;
       final y = topPad + chartHeight * (1 - normalized.clamp(0.0, 1.0));
       pointOffsets.add(Offset(x, y));
@@ -173,10 +194,7 @@ class _WeightChartPainter extends CustomPainter {
         ],
       ).createShader(Rect.fromLTWH(leftPad, topPad, chartWidth, chartHeight));
 
-    final path = Path()..moveTo(pointOffsets.first.dx, pointOffsets.first.dy);
-    for (final point in pointOffsets.skip(1)) {
-      path.lineTo(point.dx, point.dy);
-    }
+    final path = _buildSmoothPath(pointOffsets);
 
     final areaPath = Path.from(path)
       ..lineTo(pointOffsets.last.dx, size.height - bottomPad)
@@ -195,6 +213,24 @@ class _WeightChartPainter extends CustomPainter {
       canvas.drawCircle(point, 4.5, pointPaint);
       canvas.drawCircle(point, 4.5, pointStroke);
     }
+  }
+
+  Path _buildSmoothPath(List<Offset> points) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    if (points.length == 2) {
+      path.lineTo(points.last.dx, points.last.dy);
+      return path;
+    }
+
+    for (var i = 0; i < points.length - 1; i++) {
+      final current = points[i];
+      final next = points[i + 1];
+      final dx = next.dx - current.dx;
+      final cp1 = Offset(current.dx + dx * 0.35, current.dy);
+      final cp2 = Offset(next.dx - dx * 0.35, next.dy);
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, next.dx, next.dy);
+    }
+    return path;
   }
 
   @override
