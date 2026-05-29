@@ -8,6 +8,7 @@ import 'package:cal_tab/screens/settings_screen.dart';
 import 'package:cal_tab/screens/stats_screen.dart';
 import 'package:cal_tab/widgets/shell/add_food_action_sheet.dart';
 import 'package:cal_tab/widgets/shell/bottom_bar.dart';
+import 'package:cal_tab/widgets/stats/weight_entry_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -74,6 +75,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
             target: target,
             autoAction: AddFoodAutoAction.snap2cal,
           ),
+        );
+      case AddFoodAction.weight:
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => WeightEntryModal(profile: widget.profile),
         );
     }
   }

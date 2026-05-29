@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AddFoodAction { snap2cal, barcode, search }
+enum AddFoodAction { snap2cal, barcode, search, weight }
 
 class AddFoodActionSheet extends StatelessWidget {
   const AddFoodActionSheet({super.key});
@@ -41,36 +41,46 @@ class AddFoodActionSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Log food',
+                'Log entry',
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'How would you like to add this entry?',
+                'What would you like to add?',
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 18),
-              const _AddFoodActionRow(
+              const _AddActionRow(
                 action: AddFoodAction.snap2cal,
                 icon: Icons.auto_awesome,
                 title: 'Snap2Cal',
                 subtitle: 'Take a photo and let AI estimate it.',
               ),
-              const _AddFoodActionRow(
+              const _AddActionRow(
                 action: AddFoodAction.barcode,
                 icon: Icons.qr_code_scanner_rounded,
                 title: 'Barcode scan',
                 subtitle: 'Scan a product barcode.',
               ),
-              const _AddFoodActionRow(
+              const _AddActionRow(
                 action: AddFoodAction.search,
                 icon: Icons.search_rounded,
                 title: 'Manual search',
                 subtitle: 'Search the Open Food Facts database.',
+              ),
+              Divider(
+                height: 24,
+                color: colors.outlineVariant.withValues(alpha: 0.5),
+              ),
+              const _AddActionRow(
+                action: AddFoodAction.weight,
+                icon: Icons.monitor_weight_outlined,
+                title: 'Log weight',
+                subtitle: 'Track your body progress.',
               ),
             ],
           ),
@@ -80,8 +90,8 @@ class AddFoodActionSheet extends StatelessWidget {
   }
 }
 
-class _AddFoodActionRow extends StatelessWidget {
-  const _AddFoodActionRow({
+class _AddActionRow extends StatelessWidget {
+  const _AddActionRow({
     required this.action,
     required this.icon,
     required this.title,
