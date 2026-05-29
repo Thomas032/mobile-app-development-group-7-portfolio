@@ -168,7 +168,7 @@ class _WeightEntryModalState extends ConsumerState<WeightEntryModal> {
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: DateTime.now(),
     );
     if (picked == null || !mounted) {
       return;
