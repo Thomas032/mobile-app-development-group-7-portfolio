@@ -29,9 +29,8 @@ class WeightChartCard extends StatelessWidget {
         textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant) ??
         TextStyle(color: colors.onSurfaceVariant, fontSize: 11);
 
-    final firstDate = sortedAsc.first.date;
-    final lastDate = sortedAsc.last.date;
-    final includeYearOnBounds = firstDate.year != lastDate.year;
+    final includeYearOnBounds = sortedAsc.length >= 2 &&
+        sortedAsc.first.date.year != sortedAsc.last.date.year;
 
     return AppCard(
       child: Column(

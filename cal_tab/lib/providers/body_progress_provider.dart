@@ -13,7 +13,7 @@ class BodyProgressController extends AsyncNotifier<List<BodyProgressEntry>> {
   }
 
   Future<int?> addEntry(BodyProgressEntry entry) async {
-    final current = state.asData?.value ?? const <BodyProgressEntry>[];
+    final current = await future;
     final next = _sorted([...current, entry]);
     state = AsyncData(next);
 
@@ -24,7 +24,7 @@ class BodyProgressController extends AsyncNotifier<List<BodyProgressEntry>> {
   }
 
   Future<int?> removeEntry(String entryId) async {
-    final current = state.asData?.value ?? const <BodyProgressEntry>[];
+    final current = await future;
     final next = [
       for (final entry in current)
         if (entry.id != entryId) entry,
