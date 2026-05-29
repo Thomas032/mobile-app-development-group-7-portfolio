@@ -26,6 +26,17 @@ class _BarcodeScanScreenState extends ConsumerState<BarcodeScanScreen> {
   bool _navigatedToFood = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.read(barcodeScanControllerProvider.notifier).reset();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedLogDateProvider);
     final target = (widget.target ?? FoodLogTarget(date: selectedDate))
