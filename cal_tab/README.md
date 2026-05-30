@@ -13,8 +13,9 @@ CalTab is the group project for the _Mobile Applications_ module (THWS / TAMK, 2
 - **Barcode scan** — camera + Google ML Kit, falls back to Open Food Facts lookup.
 - **Snap2Cal** — take a photo, Gemini Vision estimates the food and its macros.
 - **AI assistant** — in-app chat backed by Gemini (BYOK: bring your own API key).
-- **Stats** — 7-day calorie trend, macro averages, meal consistency.
-- **Backup** — JSON export/import of profile, meals, and settings.
+- **Stats** — tabbed view: a Nutrition tab with the 7-day calorie trend, macro averages, and meal consistency, plus a Weight tab with a weight-history chart.
+- **Weight tracking** — log one weight per day from Home or Stats; the latest entry syncs to your profile and recomputes BMR/TDEE and daily macro targets automatically.
+- **Backup** — JSON export/import (format v1.1) of profile, meals, weight history, and settings.
 - **Theming** — system / light / dark, persisted across launches.
 
 ## Setup
@@ -75,9 +76,13 @@ State is managed with **Riverpod 3** (`AsyncNotifier` for async flows, `Notifier
 | `file_picker`                             | Backup import file selection.                                                              |
 | `flutter_markdown_plus`                   | Renders AI assistant replies as Markdown.                                                  |
 
-## Screenshot
+## Screenshots
 
-![Home screen](docs/screenshots/home.png)
+| Home | Search |
+| --- | --- |
+| ![Home screen](docs/screenshots/home.png) | ![Food search](docs/screenshots/search.png) |
+| **Food detail** | **AI assistant** |
+| ![Food detail](docs/screenshots/food_detail.png) | ![AI assistant](docs/screenshots/ai_assistant.png) |
 
 ## Team
 
