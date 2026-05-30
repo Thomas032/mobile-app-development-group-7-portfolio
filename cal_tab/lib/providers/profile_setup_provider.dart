@@ -2,6 +2,7 @@ import 'package:cal_tab/models/macro_targets.dart';
 import 'package:cal_tab/models/profile_setup_input.dart';
 import 'package:cal_tab/models/user_profile.dart';
 import 'package:cal_tab/providers/nutrition_providers.dart';
+import 'package:cal_tab/providers/onboarding_form_provider.dart';
 import 'package:cal_tab/providers/repository_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -114,6 +115,7 @@ class ProfileSetupController extends Notifier<ProfileSetupState> {
     final repository = await ref.read(userProfileRepositoryProvider.future);
     await repository.clearProfile();
     clear();
+    ref.invalidate(onboardingFormControllerProvider);
   }
 
   void clear() {

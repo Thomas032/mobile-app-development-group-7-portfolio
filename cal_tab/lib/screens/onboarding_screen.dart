@@ -19,6 +19,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.invalidate(onboardingFormControllerProvider);
+    });
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
