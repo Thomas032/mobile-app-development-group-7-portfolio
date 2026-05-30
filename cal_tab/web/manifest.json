@@ -3,7 +3,7 @@
     "short_name": "CalTab",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FAF9FE",
+    "background_color": "#000000",
     "theme_color": "#006E28",
     "description": "A privacy-first calorie and macro tracker.",
     "orientation": "portrait-primary",

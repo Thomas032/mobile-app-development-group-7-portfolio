@@ -63,15 +63,21 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/images/caltab_logo.png"
+  adaptive_icon_foreground: "assets/images/caltab_logo.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground_inset: 20
+
   web:
     generate: true
     image_path: "assets/images/caltab_logo.png"
+    background_color: "#000000"
   macos:
     generate: true
     image_path: "assets/images/caltab_logo.png"
   windows:
     generate: true
     image_path: "assets/images/caltab_logo.png"
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
